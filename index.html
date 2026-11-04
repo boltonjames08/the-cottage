@@ -96,7 +96,7 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
 #brightList .sl{grid-template-columns:86px 1fr 38px}
 /* ---- books ---- */
 .bsw{display:inline-block;width:10px;height:14px;border-radius:2px;margin-right:7px;vertical-align:-2px;box-shadow:inset -2px 0 0 rgba(0,0,0,.3),inset 0 2px 0 #e8c15a}
-#pmenu button:disabled{opacity:.55;cursor:default;filter:none}.pnote{margin:2px 4px;font-size:12px;color:var(--muted);max-width:240px}
+#pmenu{max-height:min(560px,80vh);overflow:auto}#pmenu button:disabled{opacity:.55;cursor:default;filter:none}.pnote{margin:2px 4px;font-size:12px;color:var(--muted);max-width:240px}
 #bookCode{flex:1;min-width:0}#bookOnBox .wide,#booksHome{width:100%}
 #bookHud{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:4;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;background:var(--wood);border:1px solid var(--edge);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5);max-width:calc(100% - 24px)}
 #bookHud b{font-family:Georgia,serif;color:#f0dcb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}#bookHud button{padding:5px 9px;font-size:13px}
@@ -199,7 +199,7 @@ svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .do
       <button id="resetBtn" title="Put every prop, door and colour back to how the cottage started">Reset the cottage</button>
       <h4>Magic books</h4>
       <div id="bookLockBox"><p>Enter the DM code to bring out the magic books.</p><div class="row"><input id="bookCode" type="password" inputmode="numeric" autocomplete="off" placeholder="DM code"><button id="bookUnlock">Bring out</button></div></div>
-      <div id="bookOnBox" hidden><p>Every room has a full set on its shelves. Tap a shelf to take a book; tap a book on the floor to lock it or return it.</p><button id="booksHome" class="wide">Put every book back</button></div>
+      <div id="bookOnBox" hidden><p>The dining room and lounge have a full set (only you can take them). Bedroom bookcases start empty: tap one to choose its books, and players can take those freely. Tap a book on the floor to lock it or return it.</p><button id="booksHome" class="wide">Put every book back</button></div>
       <h4>Lighting</h4>
       <p>How bright each room is. Lamps and candles dim with it; the fireplace has its own switch.</p>
       <div id="brightList"></div>
@@ -408,10 +408,10 @@ class Host {
   spawnBooks() {
     if (this.booksOn) return;
     this.booksOn = true; this.addBookShelves(); this.books = []; let id = 0;
-    for (const [home, list] of BOOK_HOME) for (const b of list) this.books.push({ id: id++, b, at: 0, home, home0: home, x: 0, y: 0, by: '', lock: false });
+    for (const [home, list] of BOOK_HOME) for (const b of list) { const free = !!BOOK_SHELVES[home].added; this.books.push({ id: id++, b, at: free ? 3 : 0, on: !free, home, home0: home, x: 0, y: 0, by: '', lock: false }); } // bedroom shelves start empty
     this.bv++;
   }
-  booksHome() { for (const b of this.books) { b.at = 0; b.by = ''; b.home = b.home0; b.lock = false; } this.bv++; }
+  booksHome() { for (const b of this.books) { b.at = b.on ? 0 : 3; b.by = ''; b.home = b.home0; b.lock = false; } this.bv++; }
   heldBy(id) { return this.books.find(o => o.at === 1 && o.by === id); }
   shelfExists(k) { const sh = BOOK_SHELVES[k]; return !!sh && (k[0] === 'l' || this.tables.some(t => t.k === 'shelf' && t.x1 === sh.x1 && t.y1 === sh.y1)); }
   sendToBed(q) { // into a bedroom nobody else is in (or the emptiest), straight into the bed
@@ -533,9 +533,15 @@ class Host {
       }
       case 'paper-del': { const i = this.papers.findIndex(x => x.id === num(m.id) && (x.owner === id || dm)); if (i >= 0) { this.papers.splice(i, 1); this.pv++; } break; }
       case 'books-home': if (dm) this.booksHome(); break;
-      case 'book-take': { // only the DM takes books off the shelves
+      case 'book-take': { // the DM takes from any shelf; anyone may take from a bedroom bookcase they're standing at
         const bk = this.books.find(o => o.id === num(m.id));
-        if (dm && bk && bk.at === 0 && !this.heldBy(id)) { bk.at = 1; bk.by = id; bk.x = p.x; bk.y = p.y; this.bv++; }
+        const free = bk && BOOK_SHELVES[bk.home]?.added && shelfDist(bk.home, p.x, p.y) <= BOOK_REACH + 10;
+        if (bk && bk.at === 0 && (dm || free) && !this.heldBy(id)) { bk.at = 1; bk.by = id; bk.x = p.x; bk.y = p.y; this.bv++; }
+        break;
+      }
+      case 'book-shelve': { // DM: put a bedroom-shelf book on / off its shelf
+        const bk = this.books.find(o => o.id === num(m.id));
+        if (dm && bk && (bk.at === 0 || bk.at === 3)) { bk.at = bk.at === 0 ? 3 : 0; bk.on = bk.at === 0; if (bk.at === 0) bk.home = bk.home0; this.bv++; }
         break;
       }
       case 'book-shelf': { // put the book you're holding on a bookshelf
@@ -554,7 +560,7 @@ class Host {
         break;
       }
       case 'book-lock': { const bk = this.books.find(o => o.id === num(m.id)); if (dm && bk && bk.at !== 0) { bk.lock = !bk.lock; this.bv++; } break; }
-      case 'book-return': { const bk = this.books.find(o => o.id === num(m.id)); if (dm && bk && bk.at !== 0) { bk.at = 0; bk.by = ''; bk.home = bk.home0; bk.lock = false; this.bv++; } break; }
+      case 'book-return': { const bk = this.books.find(o => o.id === num(m.id)); if (dm && bk && (bk.at === 1 || bk.at === 2)) { bk.at = 0; bk.on = true; bk.by = ''; bk.home = bk.home0; bk.lock = false; this.bv++; } break; }
       case 'tobed': { const q = dm && this.players.get(m.id); if (q && q.role !== 'dm') this.sendToBed(q); break; }
       case 'allbed': if (dm) for (const q of this.players.values()) if (q.role !== 'dm') this.sendToBed(q); break;
       case 'reset': if (dm) this.resetCottage(); break;
@@ -696,7 +702,7 @@ class Host {
     const sendBooks = this.bv !== this.sentBv || this.tick % 60 === 0; this.sentBv = this.bv;
     if (this.todMode === 3) this.tod = phaseAt(clockAt(this.tz).h);
     this.out({ t: 'state', open: [...this.open], locked: [...this.locked], seats: [...this.seats].map(([k, s]) => [k, s.a, s.s]),
-      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, scenery: this.scenery, bright: this.bright, papers: sendPapers ? this.papers.map(x => [x.id, x.owner, x.lines.flat(), x.from]) : undefined, booksOn: this.booksOn, books: sendBooks ? this.books.map(b => [b.id, b.b, b.at, Math.round(b.x), Math.round(b.y), b.by, b.lock ? 1 : 0, b.home]) : undefined, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
+      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, scenery: this.scenery, bright: this.bright, papers: sendPapers ? this.papers.map(x => [x.id, x.owner, x.lines.flat(), x.from]) : undefined, booksOn: this.booksOn, books: sendBooks ? this.books.map(b => [b.id, b.b, b.at, Math.round(b.x), Math.round(b.y), b.by, b.lock ? 1 : 0, b.home, b.home0]) : undefined, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
       players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep })) });
   }
   close() {
@@ -783,7 +789,7 @@ function onServer(m) {
   } else if (m.t === 'state') {
     players = m.players; open = new Set(m.open); locked = new Set(m.locked); lastState = performance.now();
     seats = new Map(m.seats.map(([k, a, s]) => [k, { a, s }])); tables = m.tables; rugs = m.rugs; fire = m.fire; theme = m.theme; rain = m.rain; tod = m.tod; trays = m.trays; bedCol = m.bedCol; seatCol = m.seatCol; scenery = m.scenery; bright = m.bright; if (m.papers) { papers = m.papers.map(a => { const L = []; for (let i = 0; i < a[2].length; i += 2) L.push([a[2][i], a[2][i + 1]]); return { id: a[0], owner: a[1], lines: L, from: a[3] }; }); syncPapersUi(); }
-    booksOn = m.booksOn; if (m.books) { books = m.books.map(a => ({ id: a[0], b: a[1], at: a[2], x: a[3], y: a[4], by: a[5], lock: !!a[6], home: a[7] })); syncBooksUi(); } todMode = m.todMode; tz = m.tz;
+    booksOn = m.booksOn; if (m.books) { books = m.books.map(a => ({ id: a[0], b: a[1], at: a[2], x: a[3], y: a[4], by: a[5], lock: !!a[6], home: a[7], home0: a[8] })); syncBooksUi(); } todMode = m.todMode; tz = m.tz;
     syncVoice(); updateAmbience(); renderVolumes();
     syncZoomBtn();
     let when = TOD[tod];
@@ -1872,10 +1878,18 @@ function bookMenu(bk, cx, cy) {
 function shelfMenu(k, cx, cy) {
   const me = players.find(p => p.id === myId), dm = role === 'dm', near = dm || (me && shelfDist(k, me.x, me.y) <= BOOK_REACH), held = myBook(), items = [];
   if (held) items.push({ label: near ? 'Put back: ' + bookShort(held.b) : 'Put back (walk closer)', disabled: !near, swatch: bookCol(held.b), fn: () => send({ t: 'book-shelf', shelf: k }) });
-  const here = books.filter(b => b.at === 0 && b.home === k);
-  if (!here.length) items.push({ note: 'This shelf is empty.' });
-  for (const b of here) items.push({ label: dm ? 'Take: ' + bookName(b.b) : bookName(b.b), disabled: !dm || !!held, swatch: bookCol(b.b), fn: () => send({ t: 'book-take', id: b.id }) });
-  if (!dm && here.length) items.push({ note: 'Only the DM can take books from the shelves.' });
+  const here = books.filter(b => b.at === 0 && b.home === k), free = !!BOOK_SHELVES[k].added;
+  if (dm && free) { // the DM chooses which books sit on a bedroom bookcase
+    items.push({ note: 'Choose the books on this shelf. Anyone can take what’s here.' });
+    for (const b of books.filter(b => b.home0 === k).sort((a, c) => a.b - c.b)) {
+      const out = b.at === 1 || b.at === 2;
+      items.push({ label: (out ? bookShort(b.b) + ' (taken out)' : bookName(b.b)), on: b.at === 0 && b.home === k, disabled: out, swatch: bookCol(b.b), cls: 'tog', fn: () => { send({ t: 'book-shelve', id: b.id }); setTimeout(() => shelfMenu(k, cx, cy), 120); } });
+    }
+    if (here.length) items.push({ note: 'Take one yourself:' });
+  }
+  if (!here.length && !(dm && free)) items.push({ note: free ? 'This shelf is empty. The DM chooses what goes on it.' : 'This shelf is empty.' });
+  for (const b of here) items.push({ label: (dm || (free && near) ? 'Take: ' : free ? 'Take (walk closer): ' : '') + bookName(b.b), disabled: !(dm || (free && near)) || !!held, swatch: bookCol(b.b), fn: () => send({ t: 'book-take', id: b.id }) });
+  if (!dm && here.length && !free) items.push({ note: 'Only the DM can take books from the shelves.' });
   openPopup('Bookshelf · ' + BOOK_SHELVES[k].room, '#e8c15a', items, cx, cy);
 }
 function syncBooksUi() { // the "holding a book" bar, the DM's book controls, and locked books closing for players
