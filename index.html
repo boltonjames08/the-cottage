@@ -18,7 +18,7 @@ button:hover{filter:brightness(1.13)}button:disabled{cursor:default;filter:none}
 #code{text-transform:uppercase;width:90px}#error{color:#ff9a8a;min-height:1em;margin:0}.note{color:var(--faint);font-size:13px;margin:0}
 #swatches{display:flex;flex-wrap:wrap;gap:8px}.sw{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}.sw.sel{border-color:#f6ead6;box-shadow:0 0 0 2px var(--brass)}
 #game{display:flex;flex-direction:column;height:100vh}
-header{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--wood);border-bottom:2px solid #1c1108;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
+header{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;align-items:center;padding:8px 12px;background:var(--wood);border-bottom:2px solid #1c1108;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
 .grow{flex:1}#roleTag{background:#5a3a22;border:1px solid #7a5232;padding:2px 8px;border-radius:10px;font-size:12px}input#recolor{width:34px;height:34px}
 main{flex:1;display:flex;min-height:0;position:relative}
 canvas{flex:1;min-width:0;width:100%;background:#120c08}
@@ -75,7 +75,7 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
   body{height:100dvh}#game{height:100dvh}
   header{gap:6px;padding:6px 8px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}header::-webkit-scrollbar{display:none}
   header>*{flex:none}header button{padding:6px 9px;font-size:13px}header .ses{font-size:13px;white-space:nowrap}#roleTag{white-space:nowrap}
-  #rename{width:96px}.grow{flex:1 0 4px}
+  #rename{width:96px}header button{white-space:nowrap}.grow{flex:1 0 4px}
   #panelBtn{display:inline-block}
   aside{position:absolute;top:0;right:0;bottom:0;width:min(300px,88vw);z-index:5;transform:translateX(105%);transition:transform .22s ease;box-shadow:-6px 0 20px rgba(0,0,0,.6)}
   body.panel-open aside{transform:none}body.panel-open #panelBtn{background:linear-gradient(#dcaa50,#b07a26);color:#2a1a0c;text-shadow:none}
@@ -134,6 +134,55 @@ svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .do
 .mpart h4{margin:0 0 6px;display:flex;align-items:center;gap:6px}.chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{padding:4px 8px;font-size:12px;background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}.chip.common{border-color:#5e8f50}.chip.on{background:linear-gradient(#f3e5c2,#e6d3a6);color:#2a1a0c;text-shadow:none;border-color:#f0c46a}
 @media (max-width: 820px), (max-height: 520px) { #paperWin{width:100%;height:100%;border-radius:0} #pBody{flex-direction:column} .decode{align-self:stretch} }
+header>*{flex:none}header button{white-space:nowrap}header .grow{flex:1 0 4px}#rename{width:130px}
+/* session code, invite, arrivals */
+#lobby .codehint{color:var(--faint);font-size:12px;margin:-4px 0 6px}
+.ses b{cursor:pointer;border-bottom:1px dashed var(--brass)}#inviteBtn{padding:4px 8px;font-size:12px}
+#notes{position:absolute;right:14px;top:14px;z-index:25;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.note-pop{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(30,18,9,.92);border:1px solid var(--edge);color:var(--ink);font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.5);animation:notein .35s ease-out}
+.note-pop .dot{width:12px;height:12px;border-radius:50%;border:1px solid #000}.note-pop.out{opacity:0;transition:opacity .6s}
+@keyframes notein{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+/* break banner */
+#brk{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:24;display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:12px;background:linear-gradient(#f3e5c2,#e6d3a6);color:#2a1a0c;border:2px solid var(--brass);box-shadow:0 8px 24px rgba(0,0,0,.55);font-family:Georgia,serif}
+#brk b{font-size:22px;font-variant-numeric:tabular-nums;min-width:62px;text-align:center}#brk span{font-size:15px}
+#brkRow{display:flex;gap:4px;flex-wrap:wrap}#brkRow button{flex:1;padding:6px 4px;font-size:13px;background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}
+/* drinks */
+#drinkRow{display:flex;gap:4px;margin:2px 0 8px}#drinkRow button{flex:1;padding:5px 2px;font-size:12px;background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}
+#drinkRow button.active,#brkRow button.active{background:linear-gradient(#f3e5c2,#e6d3a6);color:#2a1a0c;text-shadow:none;border-color:#f0c46a}
+.amb-h{font-size:12px;color:var(--muted);margin-top:2px}
+/* chat */
+#chatBtn{position:relative}#chatBtn i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#c0392b;color:#fff;font:bold 11px/18px system-ui;font-style:normal;text-shadow:none}
+#chatWin{position:absolute;right:12px;bottom:12px;z-index:11;width:min(360px,calc(100% - 24px));height:min(420px,calc(100% - 80px));display:flex;flex-direction:column;background:var(--wood);border:1px solid var(--edge);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.65);overflow:hidden}
+#chatWin .chead{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}#chatWin .chead b{flex:1;font-family:Georgia,serif;color:#f0dcb8}#chatWin .chead button{padding:2px 9px}
+#chatLog{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:rgba(0,0,0,.18);font-size:14px}
+.cmsg{line-height:1.35;word-wrap:break-word;overflow-wrap:anywhere}.cmsg .who{font-weight:bold}.cmsg .tag{font-size:11px;padding:1px 6px;border-radius:8px;margin-right:5px;background:#3e2715;color:var(--muted)}
+.cmsg.room .tag{background:#2c4a2a;color:#cfe8c8}.cmsg.private .tag{background:#5a3f0f;color:#ffe08a}.cmsg.private{background:rgba(255,212,59,.07);border-left:2px solid #ffd43b;padding-left:6px}
+.cmsg a{color:#8fc7ff}.cmsg .tm{color:var(--faint);font-size:11px;margin-left:4px}
+#chatForm{display:flex;flex-direction:column;gap:6px;padding:8px;border-top:1px solid var(--line)}#chatTo{font:inherit;font-size:13px;padding:5px;border-radius:6px;border:1px solid var(--edge);background:#22150b;color:inherit}
+#chatForm .row{display:flex;gap:6px}#chatIn{flex:1;min-width:0}
+/* save */
+#saveRow{display:flex;gap:4px}#saveRow button{flex:1;padding:6px 4px;font-size:13px}.save-note{color:var(--faint);font-size:12px;margin:4px 0}
+/* Investigator's Book */
+#ibWin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:13;width:min(980px,94%);height:min(680px,90%);display:flex;flex-direction:column;background:var(--wood);border:1px solid var(--edge);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.7);overflow:hidden}
+#ibWin .ihead{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}#ibWin .ihead b{flex:1;font-family:Georgia,serif;font-size:18px;color:#f0dcb8}#ibWin .ihead button{padding:4px 10px}
+#ibMain{flex:1;display:flex;min-height:0}
+#ibSide{width:270px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);background:rgba(0,0,0,.2)}
+#ibTools{display:flex;gap:4px;padding:8px}#ibTools button{flex:1;padding:5px 4px;font-size:12px;background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}
+#ibTree{flex:1;overflow-y:auto;padding:4px 6px 10px;font-size:14px}
+.ibn{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none}
+.ibn:hover{background:rgba(255,255,255,.06)}.ibn.sel{background:linear-gradient(#f3e5c2,#e6d3a6);color:#2a1a0c}.ibn .ic{flex:none;width:16px;text-align:center}.ibn .tw{flex:none;width:12px;font-size:10px;opacity:.7}
+.ibn span.t{overflow:hidden;text-overflow:ellipsis}.ibn.drop{outline:2px dashed #f0c46a}
+#ibPage{flex:1;display:flex;flex-direction:column;min-width:0;background:linear-gradient(#f3e5c2,#e8d6a8);color:#2a1a0c}
+#ibPath{font-size:12px;color:#7a5c33;padding:10px 18px 0}
+#ibTitle{font:bold 22px Georgia,serif;margin:4px 14px 0;padding:6px;background:transparent;border:1px solid transparent;border-radius:6px;color:#2a1a0c}#ibTitle:hover,#ibTitle:focus{border-color:#c4a76d;background:rgba(255,255,255,.25);outline:0}
+#ibText{flex:1;margin:8px 14px 6px;padding:10px 12px;resize:none;border:1px solid #c4a76d;border-radius:8px;background:rgba(255,255,255,.35);color:#2a1a0c;font:16px/25px Georgia,serif;
+  background-image:repeating-linear-gradient(transparent 0 24px,rgba(120,90,40,.18) 24px 25px);background-position:0 10px;background-attachment:local}
+#ibText:focus{outline:2px solid #c48a3a}
+#ibFoot{display:flex;align-items:center;gap:6px;padding:6px 14px 10px;font-size:12px;color:#7a5c33;flex-wrap:wrap}#ibFoot .grow{flex:1}#ibFoot button,#ibFoot select{padding:4px 8px;font-size:12px;background:#cdb886;border:1px solid #a88d55;color:#2a1a0c;text-shadow:none;box-shadow:none;border-radius:6px}
+#ibFoot button.danger{background:#b4553f;color:#fff;border-color:#8a3a29}
+#ibEmpty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font:16px Georgia,serif;color:#7a5c33}
+@media (max-width: 820px), (max-height: 520px) { #ibWin{width:100%;height:100%;border-radius:0} #ibMain{flex-direction:column} #ibSide{width:auto;max-height:40%;border-right:0;border-bottom:1px solid var(--line)} #chatWin{right:0;bottom:0;width:100%;height:60%;border-radius:12px 12px 0 0} }
+body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
 [hidden]{display:none!important}
 </style></head>
 <body>
@@ -142,21 +191,38 @@ svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .do
   <label>Character name <input id="name" maxlength="20" placeholder="e.g. Thorin"></label>
   <label>Token colour <input id="color" type="color" value="#4aa3ff" title="Custom colour"></label>
   <div id="swatches"></div>
-  <div class="row"><button id="create">Create session (as DM)</button></div>
-  <div class="row"><input id="code" maxlength="4" placeholder="CODE"><button id="join">Join session</button></div>
+  <div class="row"><input id="myCode" maxlength="12" placeholder="Your code (optional)" autocomplete="off" title="Pick a code to use every week (3 to 12 letters or numbers)"><button id="create">Create session (as DM)</button></div>
+  <p class="codehint">DM: pick a code once and it stays the same every week. Leave it blank for a random one.</p>
+  <div class="row"><input id="code" maxlength="12" placeholder="CODE" autocomplete="off"><button id="join">Join session</button></div>
   <p id="error"></p>
   <p class="note" id="lobbyNote">Single-file version: players join from other tabs/windows of this same browser. The DM tab runs the session, so keep it open.</p>
 </section>
 <section id="game" hidden>
   <header>
-    <span class="ses">Session <b id="sesCode"></b></span><span id="roleTag"></span><span class="grow"></span>
-    <button id="spellBtn" hidden>Spell papers</button><button id="zoomBtn">Room view: Off</button><button id="micBtn">Connect mic</button><button id="mute">Sound: On</button><input id="recolor" type="color" title="Change your colour"><input id="rename" maxlength="20"><button id="renameBtn">Rename</button><button id="leave">Leave</button><button id="panelBtn" title="Show the side panel">Panel</button>
+    <span class="ses">Session <b id="sesCode" title="Click to copy the invite link"></b></span><button id="inviteBtn" title="Copy a link that joins this session">Copy invite</button><span id="roleTag"></span><span class="grow"></span>
+    <button id="ibBtn" hidden title="The shared Investigator's Book">Investigator's Book</button><button id="spellBtn" hidden>Spell papers</button><button id="chatBtn" title="Text chat">Chat<i id="chatBadge" hidden></i></button><button id="zoomBtn">Room view: Off</button><button id="micBtn">Connect mic</button><button id="mute">Sound: On</button><input id="recolor" type="color" title="Change your colour"><input id="rename" maxlength="20"><button id="renameBtn">Rename</button><button id="leave">Leave</button><button id="panelBtn" title="Show the side panel">Panel</button>
   </header>
   <main><canvas id="canvas"></canvas>
     <div id="stick" aria-label="Move"><div></div></div>
     <div id="pmenu" hidden></div>
     <div id="bookHud" hidden><span id="bookHudDot" class="bsw"></span><b id="bookHudTitle"></b><button id="hudRead">Read</button><button id="hudDrop">Put down</button><button id="hudShelf">Back on shelf</button></div>
     <div id="toast" hidden></div>
+    <div id="notes"></div>
+    <div id="brk" hidden><span>☕ Break</span><b id="brkT">10:00</b></div>
+    <section id="chatWin" hidden aria-label="Chat">
+      <div class="chead"><b>Chat</b><button id="chatClose" title="Close">✕</button></div>
+      <div id="chatLog"></div>
+      <form id="chatForm" autocomplete="off"><select id="chatTo" title="Who sees it"></select><div class="row"><input id="chatIn" maxlength="500" placeholder="Type a message… (links work)"><button id="chatSend">Send</button></div></form>
+    </section>
+    <section id="ibWin" hidden aria-label="Investigator's Book">
+      <div class="ihead"><b>📖 The Investigator's Book</b><button id="ibClose" title="Close">✕</button></div>
+      <div id="ibMain">
+        <div id="ibSide"><div id="ibTools"><button id="ibNewPage">+ Page</button><button id="ibNewFolder">+ Folder</button></div><div id="ibTree"></div></div>
+        <div id="ibPage"><div id="ibEmpty">Everyone can write in this book.<br>Make a folder for each topic, and pages inside them.</div>
+          <div id="ibEdit" hidden style="flex:1;display:flex;flex-direction:column;min-height:0"><div id="ibPath"></div><input id="ibTitle" maxlength="80" placeholder="Title"><textarea id="ibText" placeholder="Write here…"></textarea>
+          <div id="ibFoot"><span id="ibBy"></span><span class="grow"></span><label>Move to <select id="ibMove"></select></label><button id="ibDel" class="danger">Delete</button></div></div></div>
+      </div>
+    </section>
     <section id="paperWin" hidden aria-label="Spell papers">
       <div class="rhead"><div id="pTabs"></div><button id="pClose" title="Close">✕</button></div>
       <div id="pBody"></div>
@@ -177,6 +243,8 @@ svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .do
           <label class="sl scene"><span>Outside</span><select id="sceneSel"></select></label>
           <div id="tzRow" hidden><span>Time zone</span><button id="tzDown" title="One hour earlier">−</button><b id="tzLbl">GMT</b><button id="tzUp" title="One hour later">+</button></div>
         </div>
+        <div class="amb-h">Your drink</div>
+        <div id="drinkRow"><button data-d="">None</button><button data-d="mug">Mug</button><button data-d="tankard">Tankard</button><button data-d="tea">Tea</button></div>
         <label class="sl"><span>Fireplace</span><input id="volFire" type="range" min="0" max="200" step="5"><output></output></label>
         <label class="sl"><span>Rain</span><input id="volRain" type="range" min="0" max="200" step="5"><output></output></label>
         <p class="amb-note">Volumes only change what you hear.</p>
@@ -196,6 +264,12 @@ svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .do
       <p>Door: click = open/close, Shift or right-click (or press and hold on a touch screen) = lock/unlock.</p>
       <button id="ghostBtn">Walk through walls: Off</button>
       <button id="cellBtn">Cell door: Locked</button>
+      <h4>Break</h4>
+      <div id="brkRow"><button data-min="5">5 min</button><button data-min="10">10 min</button><button data-min="15">15 min</button></div>
+      <div id="brkOn" hidden><div id="brkRow2" class="tools" style="margin-top:4px"><button id="brkAdd">+5 min</button><button id="brkEnd">End break</button></div></div>
+      <h4>Saving</h4>
+      <p class="save-note" id="saveNote">The cottage saves itself in this browser. Start a session with the same code and it is all back.</p>
+      <div id="saveRow"><button id="saveOut" title="Download a backup file (to move to another computer)">Download backup</button><button id="saveIn" title="Load a backup file">Load backup</button></div><input id="saveFile" type="file" accept=".json,application/json" hidden>
       <button id="resetBtn" title="Put every prop, door and colour back to how the cottage started">Reset the cottage</button>
       <h4>Magic books</h4>
       <div id="bookLockBox"><p>Enter the DM code to bring out the magic books.</p><div class="row"><input id="bookCode" type="password" inputmode="numeric" autocomplete="off" placeholder="DM code"><button id="bookUnlock">Bring out</button></div></div>
@@ -360,10 +434,13 @@ function makeTicker(fn, ms) {
    On the website, a small relay server links everyone's browsers (window.COTTAGE_RELAY is set by the server).
    Opened as a plain file, it falls back to linking the tabs of this one browser. Same interface either way. */
 const RELAY = !!window.COTTAGE_RELAY;
+function hostKey() { // lets this browser take its own session code back after a refresh
+  try { let k = localStorage.getItem('tavern:hostkey'); if (!k) { k = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); localStorage.setItem('tavern:hostkey', k); } return k; } catch (e) { return ''; }
+}
 function openChannel(code, asHost) {
   if (!RELAY) return new BroadcastChannel('tavern-' + code);
   const ch = { onmessage: null, onsys: null, closed: false, q: [] };
-  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?room=' + encodeURIComponent(code) + (asHost ? '&host=1' : ''));
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?room=' + encodeURIComponent(code) + (asHost ? '&host=1&key=' + hostKey() : ''));
   ws.onopen = () => { for (const m of ch.q) ws.send(m); ch.q = []; };
   ws.onmessage = e => { let d; try { d = JSON.parse(e.data); } catch { return; } if (d.sys) ch.onsys?.(d); else ch.onmessage?.({ data: d }); };
   ws.onclose = () => { if (!ch.closed) { ch.closed = true; ch.onsys?.({ sys: 'closed' }); } };
@@ -380,12 +457,17 @@ class Host {
     this.booksOn = false; this.books = []; this.bv = 1; this.sentBv = 0; this.tick = 0;
     this.papers = []; this.paperSeq = 1; this.pv = 1; this.sentPv = 0;
     this.fire = false; this.theme = 0; this.rain = false; this.tod = 0; this.todMode = 0; this.tz = 0;
+    this.brk = 0;                                             // break timer: when it ends (ms), 0 = no break
+    this.ib = { nodes: [], seq: 1 }; this.ibv = 1; this.sentIbv = 0; // the Investigator's Book
+    this.reg = this.buildRooms();                             // which room each tile is in (for room chat)
+    this.saveKey = 'cottage-save:' + code; this.lastSave = ''; this.restored = this.loadSave();
     this.connOf = new Map(); // player id -> relay connection it joined from (so nobody can pretend to be someone else)
     this.ch = openChannel(code, true);
     this.ch.onmessage = e => { if (e.data.k === 'c' && !e.data._h) this.receive(e.data.id, e.data.m, e.data._c); };
     this.ch.onsys = d => {
       if (d.sys === 'gone') { for (const [id, c] of this.connOf) if (c === d._c) { this.players.delete(id); this.connOf.delete(id); } }
-      else if (d.sys === 'host-taken' || d.sys === 'closed') this.onLocal({ t: 'ended', msg: d.sys === 'closed' ? 'Lost connection to the server.' : 'That session code is already in use, please try again.' });
+      else if (d.sys === 'replaced') { this.noSave = true; this.onLocal({ t: 'ended', msg: 'You opened this session again somewhere else, so it closed here.' }); }
+      else if (d.sys === 'host-taken' || d.sys === 'closed') this.onLocal({ t: 'ended', msg: d.sys === 'closed' ? 'Lost connection to the server.' : 'Someone else is already running a session with that code. Pick a different code.' });
     };
     this.last = performance.now();
     this.stopTick = makeTicker(() => this.step(), 33);
@@ -407,11 +489,56 @@ class Host {
   }
   spawnBooks() {
     if (this.booksOn) return;
+    this.loadBook(); // the Investigator's Book comes back as it was last time
     this.booksOn = true; this.addBookShelves(); this.books = []; let id = 0;
     for (const [home, list] of BOOK_HOME) for (const b of list) { const free = !!BOOK_SHELVES[home].added; this.books.push({ id: id++, b, at: free ? 3 : 0, on: !free, home, home0: home, x: 0, y: 0, by: '', lock: false }); } // bedroom shelves start empty
     this.bv++;
   }
   booksHome() { for (const b of this.books) { b.at = b.on ? 0 : 3; b.by = ''; b.home = b.home0; b.lock = false; } this.bv++; }
+  /* ---- rooms, for room-only chat ---- */
+  buildRooms() {
+    const reg = this.map.map(r => [...r].map(() => -1)); let n = 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (this.map[y][x] !== '.' || reg[y][x] >= 0) continue;
+      const st = [[x, y]]; reg[y][x] = n;
+      while (st.length) { const [cx, cy] = st.pop(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (this.map[ny]?.[nx] === '.' && reg[ny][nx] < 0) { reg[ny][nx] = n; st.push([nx, ny]); } } }
+      n++;
+    }
+    return reg;
+  }
+  roomsOf(p) {
+    const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE), c = this.map[ty]?.[tx];
+    if (c === '.') return [this.reg[ty][tx]];
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => this.reg[ty + dy]?.[tx + dx]).filter(r => r >= 0);
+  }
+  /* ---- saving the cottage between sessions (kept in the DM's browser) ---- */
+  snapshot() {
+    const nameOf = id => this.players.get(id);
+    return { v: 1, open: [...this.open], locked: [...this.locked], seats: [...this.seats], tables: this.tables, rugs: this.rugs,
+      trays: this.trays, seatCol: this.seatCol, bedCol: this.bedCol, theme: this.theme, scenery: this.scenery, bright: this.bright,
+      fire: this.fire, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz, booksOn: this.booksOn,
+      books: this.books.map(b => ({ ...b, at: b.at === 1 ? 2 : b.at, by: '' })),
+      papers: this.papers.map(x => { const o = nameOf(x.owner); return { id: x.id, lines: x.lines, dm: !o || o.role === 'dm', name: o ? o.name : x.pend || '' }; }), paperSeq: this.paperSeq };
+  }
+  applySave(d) {
+    if (!d || d.v !== 1) return false;
+    this.open = new Set(d.open || []); this.locked = new Set(d.locked || [CELL_DOOR]);
+    if (d.seats) this.seats = new Map(d.seats); if (d.tables) this.tables = d.tables; if (d.rugs) this.rugs = d.rugs;
+    this.rebuildTables(); this.occ = new Map();
+    for (const k of ['trays', 'seatCol', 'bedCol', 'bright']) this[k] = d[k] || {};
+    for (const k of ['theme', 'scenery', 'fire', 'rain', 'tod', 'todMode', 'tz', 'booksOn']) if (d[k] !== undefined) this[k] = d[k];
+    this.books = d.books || [];
+    this.papers = (d.papers || []).map(x => ({ id: x.id, lines: x.lines || [], owner: '', pend: x.dm ? '' : x.name, toDm: !!x.dm, from: '' }));
+    this.paperSeq = d.paperSeq || (Math.max(0, ...this.papers.map(x => x.id)) + 1);
+    if (this.booksOn) this.loadBook();
+    this.bv++; this.pv++;
+    return true;
+  }
+  loadSave() { try { const t = localStorage.getItem(this.saveKey); if (t) { const ok = this.applySave(JSON.parse(t)); this.lastSave = t; return ok; } } catch (e) {} return false; }
+  saveNow() { if (this.noSave) return; try { const t = JSON.stringify(this.snapshot()); if (t !== this.lastSave) { localStorage.setItem(this.saveKey, t); this.lastSave = t; } } catch (e) {} }
+  loadBook() { try { const t = localStorage.getItem('cottage-ibook'); if (t) { const b = JSON.parse(t); if (b && Array.isArray(b.nodes)) { this.ib = b; this.ibv++; } } } catch (e) {} }
+  saveBook() { try { localStorage.setItem('cottage-ibook', JSON.stringify(this.ib)); } catch (e) {} }
+  ibNode(id) { return this.ib.nodes.find(n => n.id === id); }
   heldBy(id) { return this.books.find(o => o.at === 1 && o.by === id); }
   shelfExists(k) { const sh = BOOK_SHELVES[k]; return !!sh && (k[0] === 'l' || this.tables.some(t => t.k === 'shelf' && t.x1 === sh.x1 && t.y1 === sh.y1)); }
   sendToBed(q) { // into a bedroom nobody else is in (or the emptiest), straight into the bed
@@ -452,7 +579,11 @@ class Host {
     const pos = role === 'dm' ? { x: 9.5 * TILE, y: 10.5 * TILE } : this.bedSpawn(null);
     const p = { id, name, color, role, x: pos.x, y: pos.y, dx: 0, dy: 0, target: null, seen: performance.now() };
     this.players.set(id, p);
-    this.out({ t: 'joined', id, code: this.code, role, map: this.map }, id); this.sentBv = -1; this.sentPv = -1; // newcomer gets the books and papers straight away
+    this.out({ t: 'joined', id, code: this.code, role, map: this.map }, id); this.sentBv = -1; this.sentPv = -1; this.sentIbv = -1;
+    let back = 0;
+    for (const pp of this.papers) if (!pp.owner && ((role === 'dm' && pp.toDm) || (role !== 'dm' && pp.pend && pp.pend.toLowerCase() === name.toLowerCase()))) { pp.owner = id; pp.pend = ''; pp.toDm = false; back++; this.pv++; }
+    if (role === 'dm' && this.restored) this.out({ t: 'toast', msg: 'Welcome back! The cottage is just as you left it.' }, id);
+    else if (back) this.out({ t: 'toast', msg: 'Your spell papers from last time are back with you.' }, id); // newcomer gets the books and papers straight away
     return p;
   }
   receive(id, m, conn) {
@@ -471,6 +602,48 @@ class Host {
       case 'rename': p.name = clean(m.name, p.name); break;
       case 'recolor': p.color = colour(m.color); break;
       case 'leave': this.players.delete(id); break;
+      case 'chat': { // everyone, just the room, or private between the DM and one player
+        const now = Date.now(); p.chatT = (p.chatT || []).filter(t => now - t < 4000); if (p.chatT.length >= 6) break; p.chatT.push(now);
+        const text = String(m.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 500); if (!text) break;
+        const base = { t: 'chat', from: id, name: p.name, color: p.color, text, ts: now };
+        if (m.to === 'all') this.out({ ...base, scope: 'all' });
+        else if (m.to === 'room') { const mine = this.roomsOf(p); for (const q of this.players.values()) if (q.id === id || this.roomsOf(q).some(r => mine.includes(r))) this.out({ ...base, scope: 'room' }, q.id); }
+        else { const q = this.players.get(m.to); if (!q || q.id === id || (!dm && q.role !== 'dm')) break; const msg = { ...base, scope: 'private', toId: q.id, toName: q.name }; this.out(msg, q.id); this.out(msg, id); }
+        break;
+      }
+      case 'drink': p.drink = ['mug', 'tankard', 'tea'].includes(m.v) ? m.v : ''; break;
+      case 'break': if (dm) { this.brk = Date.now() + Math.max(1, Math.min(120, num(m.min))) * 60000; } break;
+      case 'break-add': if (dm && this.brk) this.brk += Math.max(-60, Math.min(60, num(m.min))) * 60000; break;
+      case 'break-end': if (dm && this.brk) { this.brk = 0; this.out({ t: 'break-over' }); } break;
+      case 'save-load': if (dm && m.data && typeof m.data === 'object') { if (this.applySave(m.data.cottage || m.data)) { if (m.data.book && Array.isArray(m.data.book.nodes)) { this.ib = m.data.book; this.ibv++; this.saveBook(); } this.lastSave = ''; this.saveNow(); for (const pp of this.papers) if (!pp.owner && pp.toDm) { pp.owner = id; pp.toDm = false; } this.out({ t: 'toast', msg: 'Backup loaded.' }, id); } } break;
+      // ---- the Investigator's Book: everyone can add and edit ----
+      case 'ib-add': {
+        if (!this.booksOn || this.ib.nodes.length >= 500) break;
+        const parent = m.parent && this.ibNode(m.parent)?.kind === 'folder' ? m.parent : null, kind = m.kind === 'folder' ? 'folder' : 'page';
+        const n = { id: this.ib.seq++, kind, parent, title: String(m.title || (kind === 'folder' ? 'New folder' : 'New page')).slice(0, 80), text: '', by: p.name, at: Date.now() };
+        this.ib.nodes.push(n); this.ibv++; this.out({ t: 'ib-made', id: n.id }, id); break;
+      }
+      case 'ib-edit': {
+        const n = this.ibNode(num(m.id)); if (!this.booksOn || !n) break;
+        if (typeof m.title === 'string') n.title = m.title.slice(0, 80);
+        if (typeof m.text === 'string' && n.kind === 'page') {
+          const t = m.text.slice(0, 20000), total = this.ib.nodes.reduce((a, x) => a + (x === n ? 0 : (x.text || '').length), 0);
+          if (total + t.length > 900000) { this.out({ t: 'toast', msg: "The Investigator's Book is full. Delete some old pages first." }, id); break; }
+          n.text = t;
+        }
+        n.by = p.name; n.at = Date.now(); this.ibv++; break;
+      }
+      case 'ib-move': {
+        const n = this.ibNode(num(m.id)); if (!this.booksOn || !n) break;
+        let to = m.parent ? this.ibNode(num(m.parent)) : null; if (m.parent && (!to || to.kind !== 'folder')) break;
+        for (let a = to; a; a = a.parent ? this.ibNode(a.parent) : null) if (a.id === n.id) { to = undefined; break; } // not into itself
+        if (to === undefined) break; n.parent = to ? to.id : null; this.ibv++; break;
+      }
+      case 'ib-del': {
+        const n = this.ibNode(num(m.id)); if (!this.booksOn || !n) break;
+        const gone = new Set([n.id]); let grew = true; while (grew) { grew = false; for (const x of this.ib.nodes) if (x.parent && gone.has(x.parent) && !gone.has(x.id)) { gone.add(x.id); grew = true; } }
+        this.ib.nodes = this.ib.nodes.filter(x => !gone.has(x.id)); this.ibv++; break;
+      }
       case 'talk': p.talk = !!m.on; break;
       case 'mic': p.mic = !!m.on; break;
       case 'rtc': if (m.to !== id && this.players.has(m.to)) this.out({ t: 'rtc', from: id, data: m.data }, m.to); break; // relay WebRTC setup
@@ -695,17 +868,21 @@ class Host {
     for (const [id, p] of this.players) if (p.role !== 'dm' && now - p.seen > 15000) this.players.delete(id); // vanished tab
     while (rem > 1e-4) { const h = Math.min(rem, 1 / 30); rem -= h; for (const p of this.players.values()) this.move(p, h, now); }
     this.updateSeats();
-    for (const pp of this.papers) if (!this.players.has(pp.owner)) { const d = [...this.players.values()].find(q => q.role === 'dm'); if (d) { pp.owner = d.id; this.pv++; } } // a leaver's papers go to the DM
+    for (const pp of this.papers) if (pp.owner && !this.players.has(pp.owner)) { const d = [...this.players.values()].find(q => q.role === 'dm'); if (d) { pp.owner = d.id; this.pv++; } } // a leaver's papers go to the DM
     const sendPapers = this.pv !== this.sentPv || this.tick % 60 === 0; this.sentPv = this.pv;
     for (const bk of this.books) if (bk.at === 1) { const h = this.players.get(bk.by); if (h) { bk.x = h.x; bk.y = h.y; } else { bk.at = 2; bk.by = ''; this.bv++; } }
     this.tick++;
     const sendBooks = this.bv !== this.sentBv || this.tick % 60 === 0; this.sentBv = this.bv;
     if (this.todMode === 3) this.tod = phaseAt(clockAt(this.tz).h);
+    if (this.brk && Date.now() >= this.brk) { this.brk = 0; this.out({ t: 'break-over' }); }
+    if (this.tick % 90 === 0) this.saveNow();                              // keep the cottage saved
+    const sendIb = this.ibv !== this.sentIbv; if (sendIb && this.booksOn && this.ibv > 1) this.saveBook(); this.sentIbv = this.ibv;
     this.out({ t: 'state', open: [...this.open], locked: [...this.locked], seats: [...this.seats].map(([k, s]) => [k, s.a, s.s]),
-      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, scenery: this.scenery, bright: this.bright, papers: sendPapers ? this.papers.map(x => [x.id, x.owner, x.lines.flat(), x.from]) : undefined, booksOn: this.booksOn, books: sendBooks ? this.books.map(b => [b.id, b.b, b.at, Math.round(b.x), Math.round(b.y), b.by, b.lock ? 1 : 0, b.home, b.home0]) : undefined, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
-      players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep })) });
+      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, scenery: this.scenery, bright: this.bright, papers: sendPapers ? this.papers.map(x => [x.id, x.owner, x.lines.flat(), x.from]) : undefined, brk: this.brk ? Math.max(0, Math.ceil((this.brk - Date.now()) / 1000)) : 0, ib: sendIb && this.booksOn ? this.ib.nodes : undefined, booksOn: this.booksOn, books: sendBooks ? this.books.map(b => [b.id, b.b, b.at, Math.round(b.x), Math.round(b.y), b.by, b.lock ? 1 : 0, b.home, b.home0]) : undefined, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
+      players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep, drink }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep, drink })) });
   }
   close() {
+    this.saveNow();
     this.stopTick();
     this.ch.postMessage({ k: 's', m: { t: 'ended', msg: 'The DM left; session closed.' } });
     this.ch.close();
@@ -786,12 +963,19 @@ function onServer(m) {
     $('rename').value = $('name').value; $('recolor').value = $('color').value;
     resize(); initAudio(); buildRegions(); buildTileRooms(); lightKey = ''; syncMicBtn(); cam = FULL(); lastRoom = -1; myZoom = false;
     stopPing = makeTicker(() => send({ t: 'ping' }), 1000);
+    seenIds = null; chatLog = []; unread = 0; renderChat(); ibNodes = []; ibSel = 0; $('ibWin').hidden = true; brkLeft = 0; syncBreak();
+    if (myDrink) send({ t: 'drink', v: myDrink }); syncDrinks();
+    if (role === 'dm') $('saveNote').textContent = 'The cottage saves itself in this browser under the code ' + m.code + '. Start a session with the same code and it is all back.';
+    try { history.replaceState(null, '', location.pathname + '?code=' + encodeURIComponent(m.code)); } catch (e) {}
   } else if (m.t === 'state') {
+    arrivals(m.players);
     players = m.players; open = new Set(m.open); locked = new Set(m.locked); lastState = performance.now();
     seats = new Map(m.seats.map(([k, a, s]) => [k, { a, s }])); tables = m.tables; rugs = m.rugs; fire = m.fire; theme = m.theme; rain = m.rain; tod = m.tod; trays = m.trays; bedCol = m.bedCol; seatCol = m.seatCol; scenery = m.scenery; bright = m.bright; if (m.papers) { papers = m.papers.map(a => { const L = []; for (let i = 0; i < a[2].length; i += 2) L.push([a[2][i], a[2][i + 1]]); return { id: a[0], owner: a[1], lines: L, from: a[3] }; }); syncPapersUi(); }
     booksOn = m.booksOn; if (m.books) { books = m.books.map(a => ({ id: a[0], b: a[1], at: a[2], x: a[3], y: a[4], by: a[5], lock: !!a[6], home: a[7], home0: a[8] })); syncBooksUi(); } todMode = m.todMode; tz = m.tz;
     syncVoice(); updateAmbience(); renderVolumes();
-    syncZoomBtn();
+    syncZoomBtn(); if (m.ib) { ibNodes = m.ib; renderIb(); } $('ibBtn').hidden = !booksOn; if (!booksOn) $('ibWin').hidden = true;
+    if (m.brk !== brkLeft) { brkLeft = m.brk || 0; brkAt = performance.now(); syncBreak(); }
+    if (chatSig !== chatTargetsSig()) renderChatTo();
     let when = TOD[tod];
     if (todMode === 3) { const c = clockAt(tz); when = String(c.h).padStart(2, '0') + ':' + String(c.m).padStart(2, '0') + ' ' + tzLabel(tz) + ' · ' + when; }
     $('ambSum').textContent = [when, rain && 'Rain', fire && 'Fire'].filter(Boolean).join(' · ');
@@ -808,6 +992,9 @@ function onServer(m) {
     }
   } else if (m.t === 'rtc') onRtc(m.from, m.data);
   else if (m.t === 'toast') toast(m.msg);
+  else if (m.t === 'chat') gotChat(m);
+  else if (m.t === 'break-over') { brkLeft = 0; syncBreak(); chime([523.25, 659.25, 783.99, 1046.5], 0.22, 0.09); toast("Break's over! Back to the table."); }
+  else if (m.t === 'ib-made') { ibSel = m.id; ibFocusTitle = true; }
   else if (m.t === 'error') { clearTimeout(joinTimer); showError(m.msg); }
   else if (m.t === 'ended') leave(m.msg, false);
 }
@@ -816,14 +1003,17 @@ function start(creating) {
   showError(''); leave('', false); initAudio();
   const id = rid();
   if (creating) {
-    const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const code = Array.from({ length: 4 }, () => A[Math.floor(Math.random() * A.length)]).join('');
+    let code = cleanCode($('myCode').value);
+    if ($('myCode').value.trim() && code.length < 3) return showError('Your code needs 3 to 12 letters or numbers.');
+    if (!code) { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; code = Array.from({ length: 4 }, () => A[Math.floor(Math.random() * A.length)]).join(''); }
+    $('myCode').value = code; sstore.set('dmcode', code);
     host = new Host(code, onServer); host.hostId = id; myId = id;
     const { name, color } = identity();
     host.addPlayer(id, 'dm', clean(name, 'Dungeon Master'), colour(color));
   } else {
-    const code = $('code').value.trim().toUpperCase();
-    if (code.length !== 4) return showError('Enter the 4-letter session code.');
+    const code = cleanCode($('code').value);
+    if (code.length < 3) return showError('Enter the session code your DM gave you.');
+    $('code').value = code; sstore.set('joincode', code);
     myId = id; ch = openChannel(code, false);
     ch.onmessage = e => { if (e.data.k === 's' && (!RELAY || e.data._h) && (!e.data.to || e.data.to === myId)) onServer(e.data.m); };
     ch.onsys = d => {
@@ -846,6 +1036,7 @@ function leave(msg, notify = true) {
   volSig = ''; $('vlist').replaceChildren();
   players = []; map = []; shown.clear(); myId = ''; listSig = '';
   document.body.classList.remove('ui-hidden'); $('hideBtn').textContent = 'Hide UI';
+  $('chatWin').hidden = true; $('ibWin').hidden = true; $('brk').hidden = true; $('notes').replaceChildren(); brkLeft = 0; seenIds = null;
   $('game').hidden = true; $('lobby').hidden = false; if (msg) showError(msg);
 }
 addEventListener('pagehide', () => { if (host || ch) leave('', true); });
@@ -1028,7 +1219,7 @@ const held = new Set();
 const emitDir = () => { let dx = 0, dy = 0; for (const k of held) { dx += KEYS[k][0]; dy += KEYS[k][1]; } send({ t: 'input', dx: Math.sign(dx), dy: Math.sign(dy) }); };
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (!(k in KEYS) || e.target.tagName === 'INPUT' || !map.length) return;
+  if (!(k in KEYS) || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || !map.length) return;
   e.preventDefault(); if (!held.has(k)) { held.add(k); emitDir(); }
 });
 addEventListener('keyup', e => { if (held.delete(e.key.toLowerCase())) emitDir(); });
@@ -1944,7 +2135,7 @@ $('rNext').onclick = () => { if (activeTab && activeTab.page < BD()[activeTab.b]
 $('rModePage').onclick = () => { if (activeTab) { activeTab.mode = 'page'; renderReader(); } };
 $('rModeText').onclick = () => { if (activeTab) { activeTab.mode = 'text'; renderReader(); } };
 $('rClose').onclick = () => { readerTabs = []; activeTab = null; renderReader(); };
-addEventListener('keydown', e => { if ($('reader').hidden || e.target.tagName === 'INPUT') return; if (e.key === 'PageDown' || e.key === ']') $('rNext').click(); if (e.key === 'PageUp' || e.key === '[') $('rPrev').click(); if (e.key === 'Escape') $('rClose').click(); });
+addEventListener('keydown', e => { if ($('reader').hidden || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return; if (e.key === 'PageDown' || e.key === ']') $('rNext').click(); if (e.key === 'PageUp' || e.key === '[') $('rPrev').click(); if (e.key === 'Escape') $('rClose').click(); });
 /* holding bar */
 $('hudRead').onclick = () => { const b = myBook(); if (b) openReader(b); };
 $('hudDrop').onclick = () => { // put it down open, just in front of you
@@ -2157,6 +2348,238 @@ function drawWindow(T, [x, y, barred], now) {
   if (inf.horiz) ctx.fillRect(cx - 1, gy, 2, gh); else ctx.fillRect(gx, cy - 1, gw, 2);
   if (barred) { ctx.fillStyle = '#222'; for (let i = 1; i < 5; i++) { if (inf.horiz) ctx.fillRect(gx + i * gw / 5 - 1, gy - 2, 2, gh + 4); else ctx.fillRect(gx - 2, gy + i * gh / 5 - 1, gw + 4, 2); } }
 }
+/* ================= Session code, invite link, arrivals ================= */
+const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+const sstore = { get(k, d = '') { try { const v = localStorage.getItem('tavern:' + k); return v === null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('tavern:' + k, v); } catch (e) {} } };
+{ const q = new URLSearchParams(location.search).get('code');
+  $('myCode').value = sstore.get('dmcode');
+  $('code').value = q ? cleanCode(q) : sstore.get('joincode');
+  for (const id of ['myCode', 'code']) $(id).addEventListener('input', e => { const c = cleanCode(e.target.value); if (c !== e.target.value) e.target.value = c; });
+  $('code').addEventListener('keydown', e => { if (e.key === 'Enter') $('join').click(); }); }
+const inviteLink = () => location.origin + location.pathname + '?code=' + encodeURIComponent($('sesCode').textContent);
+async function copyInvite() {
+  const link = location.protocol === 'file:' ? $('sesCode').textContent : inviteLink();
+  try { await navigator.clipboard.writeText(link); toast(location.protocol === 'file:' ? 'Code copied.' : 'Invite link copied: ' + link); }
+  catch (e) { toast('Invite link: ' + link); }
+}
+$('inviteBtn').onclick = copyInvite; $('sesCode').onclick = copyInvite;
+
+function chime(notes, vol = 0.12, gap = 0.12) { // soft bell notes, made on the spot
+  if (!ac || muted) return;
+  const t0 = ac.currentTime + 0.02;
+  notes.forEach((f, i) => {
+    const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), t = t0 + i * gap;
+    o.type = 'sine'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2.01;
+    const g2 = ac.createGain(); g2.gain.value = 0.18; o2.connect(g2).connect(g);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    o.connect(g).connect(master); o.start(t); o2.start(t); o.stop(t + 1.5); o2.stop(t + 1.5);
+  });
+}
+let seenIds = null; const seenInfo = new Map();
+function arrivals(list) { // someone came in or left: a soft chime and a little name card
+  const now = new Map(list.map(p => [p.id, p]));
+  if (seenIds) {
+    for (const p of list) if (!seenIds.has(p.id) && p.id !== myId) { notePop(p.name + (p.role === 'dm' ? ' (DM)' : '') + ' arrived', p.color); chime([587.33, 880], 0.1, 0.13); }
+    for (const id of seenIds) if (!now.has(id) && id !== myId) { const p = seenInfo.get(id); if (p) { notePop(p.name + ' left', p.color); chime([659.25, 440], 0.08, 0.15); } }
+  }
+  seenIds = new Set(now.keys()); for (const p of list) seenInfo.set(p.id, { name: p.name, color: p.color });
+}
+function notePop(text, color) {
+  const d = document.createElement('div'); d.className = 'note-pop';
+  d.innerHTML = '<span class="dot"></span><span></span>'; d.firstChild.style.background = color; d.lastChild.textContent = text;
+  $('notes').append(d); while ($('notes').children.length > 5) $('notes').firstChild.remove();
+  setTimeout(() => d.classList.add('out'), 4200); setTimeout(() => d.remove(), 4900);
+}
+
+/* ================= Text chat ================= */
+let chatLog = [], unread = 0, chatSig = '';
+const chatTargetsSig = () => role + '|' + players.filter(p => p.id !== myId).map(p => p.id + p.name + p.role).join();
+function renderChatTo() {
+  chatSig = chatTargetsSig(); const sel = $('chatTo'), cur = sel.value;
+  const opts = [['all', 'Everyone'], ['room', 'Just this room']];
+  if (role === 'dm') for (const p of players) { if (p.id !== myId) opts.push([p.id, 'Private to ' + p.name]); }
+  else { const d = players.find(p => p.role === 'dm'); if (d) opts.push([d.id, 'Private to the DM (' + d.name + ')']); }
+  sel.replaceChildren(...opts.map(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; }));
+  sel.value = opts.some(o => o[0] === cur) ? cur : 'all';
+}
+function linkify(el, text) { // plain text, with web links made clickable
+  const re = /\bhttps?:\/\/[^\s<>"']+/gi; let last = 0, m;
+  while ((m = re.exec(text))) {
+    let url = m[0].replace(/[.,;:!?)\]]+$/, ''); el.append(text.slice(last, m.index));
+    const a = document.createElement('a'); a.href = url; a.textContent = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; el.append(a);
+    last = m.index + url.length; re.lastIndex = last;
+  }
+  el.append(text.slice(last));
+}
+function gotChat(m) {
+  chatLog.push(m); if (chatLog.length > 300) chatLog.shift();
+  const mine = m.from === myId;
+  if (!mine && $('chatWin').hidden) { unread++; if (m.scope === 'private') toast('Private message from ' + m.name); }
+  if (!mine) chime(m.scope === 'private' ? [880, 1174.66] : [987.77], m.scope === 'private' ? 0.07 : 0.035, 0.09);
+  renderChat();
+}
+function renderChat() {
+  const log = $('chatLog'), atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  log.replaceChildren(...chatLog.map(m => {
+    const d = document.createElement('div'); d.className = 'cmsg ' + m.scope;
+    if (m.scope !== 'all') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = m.scope === 'room' ? 'room' : m.from === myId ? 'to ' + m.toName : 'private'; d.append(t); }
+    const w = document.createElement('span'); w.className = 'who'; w.style.color = m.color; w.textContent = m.name + ': '; d.append(w);
+    linkify(d, m.text);
+    const tm = document.createElement('span'); tm.className = 'tm'; const dt = new Date(m.ts); tm.textContent = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0'); d.append(tm);
+    return d;
+  }));
+  if (!chatLog.length) { const e = document.createElement('div'); e.className = 'cmsg'; e.style.color = 'var(--faint)'; e.textContent = 'Share links, spellings, or chat if you have no mic. Choose who sees it below.'; log.append(e); }
+  if (atEnd || chatLog[chatLog.length - 1]?.from === myId) log.scrollTop = log.scrollHeight;
+  $('chatBadge').hidden = !unread; $('chatBadge').textContent = unread > 9 ? '9+' : unread;
+}
+$('chatBtn').onclick = () => { const w = $('chatWin'); w.hidden = !w.hidden; if (!w.hidden) { unread = 0; renderChatTo(); renderChat(); $('chatLog').scrollTop = 1e9; if (!document.body.classList.contains('touch')) $('chatIn').focus(); } };
+$('chatClose').onclick = () => { $('chatWin').hidden = true; };
+$('chatForm').onsubmit = e => { e.preventDefault(); const text = $('chatIn').value.trim(); if (!text) return; send({ t: 'chat', to: $('chatTo').value, text }); $('chatIn').value = ''; };
+$('chatIn').addEventListener('keydown', e => { if (e.key === 'Escape') { $('chatWin').hidden = true; e.target.blur(); } });
+
+/* ================= Drinks at the table ================= */
+let myDrink = sstore.get('drink');
+function syncDrinks() { for (const b of $('drinkRow').children) b.classList.toggle('active', b.dataset.d === myDrink); }
+for (const b of $('drinkRow').children) b.onclick = () => { myDrink = b.dataset.d; sstore.set('drink', myDrink); syncDrinks(); send({ t: 'drink', v: myDrink }); };
+syncDrinks();
+function drinkSpot(p) { // where your drink sits: on the table in front of your chair, or else just beside you
+  const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE), st = seats.get(dk(tx, ty));
+  if (st && st.s !== 'bed' && Math.hypot(p.x - (tx + 0.5) * TILE, p.y - (ty + 0.5) * TILE) < 6) {
+    const r = st.a * Math.PI / 180, fx = -Math.sin(r), fy = Math.cos(r); // chairs face "down" before rotating
+    const sd = Math.abs(fx) > 0.5 ? -Math.sign(fx) : Math.sign(fy);  // beside any dice tray, on the lower / right-hand side so it's never under the DM screen
+    for (const side of [sd, -sd]) {
+      const ax = (tx + 0.5) * TILE + fx * TILE * 0.85 + fy * 19 * side, ay = (ty + 0.5) * TILE + fy * TILE * 0.85 - fx * 19 * side;
+      const nt = Math.floor(ax / TILE), nty = Math.floor(ay / TILE);
+      if (tables.some(t => t.k !== 'shelf' && t.k !== 'bed' && nt >= t.x1 && nt <= t.x2 && nty >= t.y1 && nty <= t.y2)) return { x: ax, y: ay };
+    }
+  }
+  return null;
+}
+function drawDrink(kind, c, x, y, sc = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+  const dk2 = shade(c, -0.35), lt = shade(c, 0.3);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(1.5, 2, kind === 'tankard' ? 8.5 : 7.5, 0, Math.PI * 2); ctx.fill();
+  if (kind === 'tea') {
+    ctx.fillStyle = '#efe8da'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#b8ad98'; ctx.lineWidth = 0.8; ctx.stroke(); // saucer
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = dk2; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#9a5a22'; ctx.beginPath(); ctx.arc(0, 0, 4.3, 0, Math.PI * 2); ctx.fill();                       // tea
+    ctx.fillStyle = 'rgba(255,230,180,.45)'; ctx.beginPath(); ctx.arc(-1.4, -1.4, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(7.6, 0, 2.2, -1.3, 1.3); ctx.stroke();               // little handle
+  } else if (kind === 'tankard') {
+    ctx.strokeStyle = '#8a6a30'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(9, 0, 3.6, -1.4, 1.4); ctx.stroke();        // handle
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c9a24a'; ctx.lineWidth = 1.6; ctx.stroke();                                                       // brass rim
+    ctx.fillStyle = '#f6f0de'; ctx.beginPath(); ctx.arc(0, 0, 5.2, 0, Math.PI * 2); ctx.fill();                          // foam
+    ctx.fillStyle = 'rgba(210,190,140,.7)'; for (const [bx, by, br] of [[-2, -1, 1.6], [2, 1.5, 1.3], [1, -2.5, 1], [-2, 2.5, 0.9]]) { ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill(); }
+  } else { // mug
+    ctx.strokeStyle = dk2; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(7.5, 0, 3, -1.4, 1.4); ctx.stroke();
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, 0, 6.8, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = dk2; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = '#4a2c16'; ctx.beginPath(); ctx.arc(0, 0, 4.8, 0, Math.PI * 2); ctx.fill();                           // coffee / cocoa
+    ctx.fillStyle = lt; ctx.globalAlpha *= 0.5; ctx.beginPath(); ctx.arc(-1.6, -1.6, 1.3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawDrinks() { for (const p of players) if (p.drink) { const at = drinkSpot(p); if (at) drawDrink(p.drink, p.color, at.x, at.y); } }
+
+/* ================= Break timer ================= */
+let brkLeft = 0, brkAt = 0;
+function syncBreak() {
+  $('brk').hidden = !brkLeft; if (role === 'dm') { $('brkOn').hidden = !brkLeft; }
+  tickBreak();
+}
+function tickBreak() {
+  if (!brkLeft) return;
+  const left = Math.max(0, Math.ceil(brkLeft - (performance.now() - brkAt) / 1000));
+  $('brkT').textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+}
+makeTicker(tickBreak, 250);
+for (const b of $('brkRow').children) b.onclick = () => send({ t: 'break', min: +b.dataset.min });
+$('brkAdd').onclick = () => send({ t: 'break-add', min: 5 });
+$('brkEnd').onclick = () => send({ t: 'break-end' });
+
+/* ================= Saving: backup file (the cottage also saves itself in the DM's browser) ================= */
+$('saveOut').onclick = () => {
+  if (!host) return; host.saveNow();
+  const data = { cottage: host.snapshot(), book: host.ib, code: host.code, saved: new Date().toISOString() };
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  a.download = 'the-cottage-' + host.code + '.json'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+$('saveIn').onclick = () => $('saveFile').click();
+$('saveFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { send({ t: 'save-load', data: JSON.parse(await f.text()) }); } catch (err) { toast('That file is not a Cottage backup.'); }
+};
+
+/* ================= The Investigator's Book (shared notebook: folders, sub-folders and pages) ================= */
+let ibNodes = [], ibSel = 0, ibFocusTitle = false, ibOpen = new Set(), ibTyping = 0, ibSendT = 0, ibDragId = 0;
+const ibNode = id => ibNodes.find(n => n.id === id);
+const ibKids = pid => ibNodes.filter(n => (n.parent || null) === (pid || null)).sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'folder' ? -1 : 1) || a.title.localeCompare(b.title, undefined, { numeric: true }));
+function ibPath(n) { const out = []; for (let a = n && n.parent ? ibNode(n.parent) : null; a; a = a.parent ? ibNode(a.parent) : null) out.unshift(a.title); return out; }
+function ibTargetFolder() { const n = ibNode(ibSel); return !n ? null : n.kind === 'folder' ? n.id : n.parent || null; }
+function renderIb() {
+  if ($('ibWin').hidden) return;
+  if (ibSel && !ibNode(ibSel)) ibSel = 0;
+  const tree = $('ibTree'), rows = [];
+  const walk = (pid, depth) => {
+    for (const n of ibKids(pid)) {
+      const d = document.createElement('div'); d.className = 'ibn' + (n.id === ibSel ? ' sel' : ''); d.style.paddingLeft = 6 + depth * 16 + 'px'; d.dataset.id = n.id; d.draggable = true;
+      const isF = n.kind === 'folder', opened = ibOpen.has(n.id);
+      d.innerHTML = '<span class="tw"></span><span class="ic"></span><span class="t"></span>';
+      d.children[0].textContent = isF ? (opened ? '▾' : '▸') : ''; d.children[1].textContent = isF ? (opened ? '📂' : '📁') : '📄'; d.children[2].textContent = n.title || '(untitled)';
+      d.onclick = () => { if (isF) { if (ibSel === n.id || !opened) opened ? ibOpen.delete(n.id) : ibOpen.add(n.id); } ibSel = n.id; renderIb(); };
+      d.ondragstart = e => { ibDragId = n.id; e.dataTransfer.effectAllowed = 'move'; };
+      if (isF) { d.ondragover = e => { if (ibDragId && ibDragId !== n.id) { e.preventDefault(); d.classList.add('drop'); } }; d.ondragleave = () => d.classList.remove('drop'); d.ondrop = e => { e.preventDefault(); d.classList.remove('drop'); if (ibDragId) { send({ t: 'ib-move', id: ibDragId, parent: n.id }); ibOpen.add(n.id); } ibDragId = 0; }; }
+      rows.push(d);
+      if (isF && opened) walk(n.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  if (!rows.length) { const e = document.createElement('div'); e.className = 'ibn'; e.style.opacity = .6; e.textContent = 'Empty so far'; rows.push(e); }
+  tree.replaceChildren(...rows);
+  tree.ondragover = e => { if (ibDragId && e.target === tree) e.preventDefault(); }; tree.ondrop = e => { if (e.target === tree && ibDragId) { e.preventDefault(); send({ t: 'ib-move', id: ibDragId, parent: null }); } ibDragId = 0; };
+  const n = ibNode(ibSel);
+  $('ibEmpty').hidden = !!n; $('ibEdit').hidden = !n;
+  if (!n) return;
+  $('ibPath').textContent = ['Book', ...ibPath(n)].join(' › ') + (n.kind === 'folder' ? ' ›' : '');
+  if (document.activeElement !== $('ibTitle') || Date.now() - ibTyping > 2500) $('ibTitle').value = n.title;
+  $('ibText').hidden = n.kind !== 'page';
+  if (n.kind === 'page' && (document.activeElement !== $('ibText') || Date.now() - ibTyping > 2500) && $('ibText').value !== n.text) $('ibText').value = n.text;
+  $('ibBy').textContent = (n.kind === 'folder' ? 'Folder · ' + ibKids(n.id).length + ' inside · ' : '') + (n.by ? 'Last changed by ' + n.by : '');
+  const banned = new Set(); if (n.kind === 'folder') { const add = id => { banned.add(id); for (const k of ibNodes) if (k.parent === id) add(k.id); }; add(n.id); }
+  const sel = $('ibMove'), opts = [['', 'Top of the book']];
+  const fl = (pid, depth) => { for (const f of ibKids(pid)) if (f.kind === 'folder') { if (!banned.has(f.id)) opts.push([String(f.id), '  '.repeat(depth + 1) + f.title]); fl(f.id, depth + 1); } };
+  fl(null, 0);
+  sel.replaceChildren(...opts.map(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; }));
+  sel.value = n.parent ? String(n.parent) : '';
+  if (ibFocusTitle) { ibFocusTitle = false; $('ibTitle').focus(); $('ibTitle').select(); }
+}
+function ibOpenWin() { $('ibWin').hidden = false; renderIb(); }
+$('ibBtn').onclick = () => { if ($('ibWin').hidden) ibOpenWin(); else $('ibWin').hidden = true; };
+$('ibClose').onclick = () => { ibFlush(); $('ibWin').hidden = true; };
+const ibNew = kind => { const parent = ibTargetFolder(); if (parent) ibOpen.add(parent); send({ t: 'ib-add', kind, parent }); };
+$('ibNewPage').onclick = () => ibNew('page');
+$('ibNewFolder').onclick = () => ibNew('folder');
+let ibPend = null;
+function ibFlush() { clearTimeout(ibSendT); if (ibPend) { send(ibPend); ibPend = null; } }
+function ibQueue(field, val) {
+  const n = ibNode(ibSel); if (!n) return; n[field] = val; ibTyping = Date.now();
+  if (ibPend && ibPend.id !== n.id) ibFlush();
+  ibPend = { ...(ibPend || { t: 'ib-edit', id: n.id }), [field]: val };
+  clearTimeout(ibSendT); ibSendT = setTimeout(ibFlush, 500);
+}
+$('ibTitle').oninput = e => { ibQueue('title', e.target.value); const row = $('ibTree').querySelector('.ibn.sel .t'); if (row) row.textContent = e.target.value || '(untitled)'; };
+$('ibText').oninput = e => ibQueue('text', e.target.value);
+$('ibTitle').onblur = $('ibText').onblur = ibFlush;
+$('ibTitle').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ibFlush(); const n = ibNode(ibSel); if (n?.kind === 'page') $('ibText').focus(); else e.target.blur(); } };
+$('ibMove').onchange = e => { ibFlush(); send({ t: 'ib-move', id: ibSel, parent: e.target.value ? +e.target.value : null }); if (e.target.value) ibOpen.add(+e.target.value); };
+let ibDelArm = 0;
+$('ibDel').onclick = () => {
+  const n = ibNode(ibSel); if (!n) return;
+  if (Date.now() - ibDelArm > 3000) { ibDelArm = Date.now(); $('ibDel').textContent = n.kind === 'folder' ? 'Delete folder and everything in it?' : 'Really delete?'; setTimeout(() => { $('ibDel').textContent = 'Delete'; }, 3000); return; }
+  ibDelArm = 0; $('ibDel').textContent = 'Delete'; ibPend = null; clearTimeout(ibSendT); send({ t: 'ib-del', id: n.id }); ibSel = n.parent || 0;
+};
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('ibWin').hidden && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) $('ibWin').hidden = true; });
+
 function frame(now) {
   const T = themeOf(theme);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -2221,6 +2644,7 @@ function frame(now) {
       }
       ctx.restore();
     }
+    drawDrinks();
     ctx.fillStyle = T.wall; ctx.globalAlpha = 0.9; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('CELL', 18 * TILE, 2 * TILE + 4); ctx.globalAlpha = 1;
     for (const bk of books) if (bk.at === 2) drawOpenBook(bk, now);

@@ -7,7 +7,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT) || 3000;
-const MAX_ROOMS = 300, MAX_PER_ROOM = 40, MAX_MSG = 64 * 1024;
+const MAX_ROOMS = 300, MAX_PER_ROOM = 40, MAX_MSG = 2 * 1024 * 1024; // big enough for the shared Investigator's Book
 // Optional: extra ICE servers for voice (for example a TURN service), as JSON in the ICE_SERVERS setting.
 let ICE = null;
 try { if (process.env.ICE_SERVERS) ICE = JSON.parse(process.env.ICE_SERVERS); } catch (e) { console.warn('ICE_SERVERS is not valid JSON, ignoring it'); }
@@ -89,15 +89,20 @@ server.on('upgrade', (req, socket) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname !== '/ws') return socket.destroy();
   const code = String(u.searchParams.get('room') || '').toUpperCase();
-  const asHost = u.searchParams.get('host') === '1';
+  const asHost = u.searchParams.get('host') === '1', key = String(u.searchParams.get('key') || '');
   accept(req, socket, conn => {
     const sys = (c, o) => c.send(JSON.stringify(o));
-    if (!/^[A-Z]{4}$/.test(code)) { sys(conn, { sys: 'no-room' }); return conn.close(); }
+    if (!/^[A-Z0-9]{3,12}$/.test(code)) { sys(conn, { sys: 'no-room' }); return conn.close(); }
     let room = rooms.get(code);
+    if (room && asHost && /^[a-z0-9]{8,40}$/.test(key) && room.key === key) { // the same DM coming back (e.g. a refresh): the old tab's session ends
+      room.dead = true; rooms.delete(code);
+      for (const c of room.conns) { sys(c, { sys: c === room.host ? 'replaced' : 'host-gone' }); c.close(); }
+      room = null;
+    }
     if (asHost) {
       if (room) { sys(conn, { sys: 'host-taken' }); return conn.close(); }
       if (rooms.size >= MAX_ROOMS) { sys(conn, { sys: 'full' }); return conn.close(); }
-      room = { host: conn, conns: new Set([conn]) }; rooms.set(code, room);
+      room = { host: conn, conns: new Set([conn]), key }; rooms.set(code, room);
     } else {
       if (!room) { sys(conn, { sys: 'no-room' }); return conn.close(); }
       if (room.conns.size >= MAX_PER_ROOM) { sys(conn, { sys: 'full' }); return conn.close(); }
@@ -112,6 +117,7 @@ server.on('upgrade', (req, socket) => {
       for (const c of room.conns) if (c !== conn) c.send(out);
     };
     conn.onClose = () => {
+      if (room.dead) return;
       room.conns.delete(conn);
       if (conn === room.host) { for (const c of room.conns) { sys(c, { sys: 'host-gone' }); c.close(); } rooms.delete(code); }
       else if (room.host) sys(room.host, { sys: 'gone', _c: conn.id });
