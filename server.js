@@ -12,12 +12,19 @@ const MAX_ROOMS = 300, MAX_PER_ROOM = 40, MAX_MSG = 64 * 1024;
 let ICE = null;
 try { if (process.env.ICE_SERVERS) ICE = JSON.parse(process.env.ICE_SERVERS); } catch (e) { console.warn('ICE_SERVERS is not valid JSON, ignoring it'); }
 
-const page = () => fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8')
+// the game page can live in public/index.html or right next to this file (either works)
+const PAGE_FILES = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html'), path.join(__dirname, 'the-cottage.html')];
+const pageFile = () => PAGE_FILES.find(f => fs.existsSync(f));
+const page = () => fs.readFileSync(pageFile(), 'utf8')
   .replace('<head>', '<head><script>window.COTTAGE_RELAY=true;' + (ICE ? 'window.COTTAGE_ICE=' + JSON.stringify(ICE) + ';' : '') + '</script>');
 
 const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
   if (url === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
+  if ((url === '/' || url === '/index.html') && !pageFile()) {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('The game page is missing. Upload index.html (from the zip) to your GitHub repository, next to server.js.');
+  }
   if (url === '/' || url === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache',
       'Permissions-Policy': 'microphone=(self)', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
@@ -114,4 +121,4 @@ server.on('upgrade', (req, socket) => {
 // keep connections alive through hosting proxies, and drop dead ones
 setInterval(() => { for (const r of rooms.values()) for (const c of r.conns) c.ping(); }, 25000);
 
-server.listen(PORT, () => console.log('The Cottage is running on port ' + PORT));
+server.listen(PORT, () => console.log('The Cottage is running on port ' + PORT + (pageFile() ? ' (page: ' + path.relative(__dirname, pageFile()) + ')' : ' - WARNING: index.html not found')));
