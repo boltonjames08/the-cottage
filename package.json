@@ -1,0 +1,10 @@
+{
+  "name": "the-cottage",
+  "version": "1.0.0",
+  "description": "A cosy 2D roleplay space with proximity voice chat for D&D groups.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED",
+  "private": true
+}
