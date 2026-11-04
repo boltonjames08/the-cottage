@@ -85,6 +85,15 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
   li button{padding:5px 8px;font-size:12px}.tools button{padding:8px 4px}
 }
 @media (max-width: 820px) and (min-width: 400px) { #lobby{max-width:380px;margin:6vh auto} }
+#pmenu{position:fixed;z-index:20;min-width:190px;padding:6px;background:var(--wood);border:1px solid var(--edge);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:4px}
+#pmenu .ph{display:flex;align-items:center;gap:8px;padding:4px 6px 6px;border-bottom:1px solid var(--line);font-family:Georgia,serif;color:#f0dcb8}
+#pmenu .ph .dot{width:12px;height:12px;border-radius:50%}
+#pmenu button{text-align:left;padding:7px 10px;font-size:14px;background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}
+#pmenu button.on{background:linear-gradient(#dcaa50,#b07a26);border-color:#f0c46a;color:#2a1a0c;text-shadow:none}
+#pmenu button.kick{background:linear-gradient(#9a3226,#74221a);border-color:#b8463a}
+#resetBtn.warn{background:linear-gradient(#c0392b,#962a1f);border-color:#e06050}
+#allBedBtn{width:100%}.sl.scene{grid-template-columns:82px 1fr}select{font:inherit;font-size:13px;padding:5px 6px;border-radius:6px;border:1px solid var(--edge);background:#22150b;color:var(--ink)}
+#brightList .sl{grid-template-columns:86px 1fr 38px}
 [hidden]{display:none!important}
 </style></head>
 <body>
@@ -105,12 +114,14 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
   </header>
   <main><canvas id="canvas"></canvas>
     <div id="stick" aria-label="Move"><div></div></div>
+    <div id="pmenu" hidden></div>
     <button id="hideBtn" title="Hide or show all the controls (H)">Hide UI</button>
     <div id="amb" class="folded">
       <div id="ambBody">
         <div id="ambDm">
           <div class="tools"><button id="fireBtn">Fireplace: Off</button><button id="rainBtn">Rain: Off</button></div>
           <div id="todBtns"></div>
+          <label class="sl scene"><span>Outside</span><select id="sceneSel"></select></label>
           <div id="tzRow" hidden><span>Time zone</span><button id="tzDown" title="One hour earlier">−</button><b id="tzLbl">GMT</b><button id="tzUp" title="One hour later">+</button></div>
         </div>
         <label class="sl"><span>Fireplace</span><input id="volFire" type="range" min="0" max="200" step="5"><output></output></label>
@@ -132,6 +143,10 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
       <p>Door: click = open/close, Shift or right-click (or press and hold on a touch screen) = lock/unlock.</p>
       <button id="ghostBtn">Walk through walls: Off</button>
       <button id="cellBtn">Cell door: Locked</button>
+      <button id="resetBtn" title="Put every prop, door and colour back to how the cottage started">Reset the cottage</button>
+      <h4>Lighting</h4>
+      <p>How bright each room is. Lamps and candles dim with it; the fireplace has its own switch.</p>
+      <div id="brightList"></div>
       <h4>Colour theme</h4><div id="themes"></div>
       <h4>Objects</h4>
       <div class="tools"><button id="tool-chair">Chair</button><button id="tool-table">Table</button><button id="tool-erase">Erase</button></div>
@@ -141,6 +156,9 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
       <h4>Room view</h4>
       <p>Force a player's view to the room they're in. They can't zoom out until you release it.</p>
       <div class="tools"><button id="zoomAllOn">Force all</button><button id="zoomAllOff">Release all</button></div>
+      <h4>Everyone</h4>
+      <p>Tip: tap a player on the map for all of their commands.</p>
+      <button id="allBedBtn" class="wide">Send everyone to bed</button>
       <h4>Players &amp; voice</h4>
       <p>Mute: the room can't hear them. Deafen: they can't hear anyone. Direct: a private line with you from anywhere; while one is open only those players hear you.</p>
       <ul id="plist"></ul>
@@ -178,6 +196,10 @@ const SEAT0 = [[4, 2, 0, 'throne'], [2, 4, 270, 'chair'], [2, 6, 270, 'chair'], 
 // Windows in the outer walls: [x, y, barred]. Orientation and inside direction are worked out from the map.
 const WINDOWS = [[3, 0], [5, 0], [0, 3], [0, 6], [0, 15], [3, 17], [8, 17], [13, 17], [17, 17], [19, 10], [19, 15], [18, 0, true]];
 const TOD = ['Day', 'Evening', 'Night'];
+// rooms by name (a tile inside each), used for brightness and lights
+const ROOM_AT = { dining: [3, 7], lounge: [12, 7], corridor: [5, 10], cell: [17, 1], bed1: [2, 15], bed2: [7, 15], bed3: [12, 15], bed4: [17, 15] };
+const ROOM_LABEL = { dining: 'Dining room', lounge: 'Lounge', corridor: 'Corridor', cell: 'Cell', bed1: 'Bedroom 1', bed2: 'Bedroom 2', bed3: 'Bedroom 3', bed4: 'Bedroom 4' };
+const SCENERY = { pines: 'Pine trees', snow: 'Snowy trees', forest: 'Forest', city: 'City', town: 'Medieval town', none: 'Plain' };
 /* Real-time mode: GMT plus the DM's hour offset, on a fixed schedule (no seasons). */
 const phaseAt = h => h >= 7 && h < 18 ? 0 : (h >= 18 && h < 21) || (h >= 5 && h < 7) ? 1 : 2;
 const clockAt = tz => { const d = new Date(Date.now() + tz * 3600e3); return { h: d.getUTCHours(), m: d.getUTCMinutes() }; };
@@ -252,12 +274,9 @@ function openChannel(code, asHost) {
 class Host {
   constructor(code, onLocal) {
     this.code = code; this.onLocal = onLocal; this.map = buildMap(); this.open = new Set(); this.locked = new Set([CELL_DOOR]);
-    this.seats = new Map(SEAT0.map(([x, y, a, s]) => [dk(x, y), { x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, a, s }]));
-    this.tables = OBJ0.map(o => ({ ...o })); this.rugs = RUG0.map(o => ({ ...o })); this.tableTiles = new Set(); this.rebuildTables();
-    for (const b of this.tables) if (b.k === 'bed') this.seats.set(dk(b.x1, b.y1), { x: (b.x1 + 0.5) * TILE, y: (b.y1 + 1) * TILE, a: 0, s: 'bed' }); // lie down in the middle of the bed
-    this.bedCol = {}; // bed seat key -> colour of whoever last slept there
-    this.occ = new Map(); this.trays = {}; this.seatCol = {};            // seat key -> id of the player sitting there (max one per seat)
-    this.fire = false; this.theme = 0; this.rain = false; this.tod = 0; this.todMode = 0; this.tz = 0; this.players = new Map();
+    this.players = new Map(); this.resetCottage();
+    this.scenery = 'pines'; this.bright = {};
+    this.fire = false; this.theme = 0; this.rain = false; this.tod = 0; this.todMode = 0; this.tz = 0;
     this.connOf = new Map(); // player id -> relay connection it joined from (so nobody can pretend to be someone else)
     this.ch = openChannel(code, true);
     this.ch.onmessage = e => { if (e.data.k === 'c' && !e.data._h) this.receive(e.data.id, e.data.m, e.data._c); };
@@ -267,6 +286,25 @@ class Host {
     };
     this.last = performance.now();
     this.stopTick = makeTicker(() => this.step(), 33);
+  }
+  resetCottage() { // every prop, door and colour back to how the cottage started
+    this.open = new Set(); this.locked = new Set([CELL_DOOR]);
+    this.seats = new Map(SEAT0.map(([x, y, a, s]) => [dk(x, y), { x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, a, s }]));
+    this.tables = OBJ0.map(o => ({ ...o })); this.rugs = RUG0.map(o => ({ ...o })); this.tableTiles = new Set(); this.rebuildTables();
+    for (const b of this.tables) if (b.k === 'bed') this.seats.set(dk(b.x1, b.y1), { x: (b.x1 + 0.5) * TILE, y: (b.y1 + 1) * TILE, a: 0, s: 'bed' }); // lie down in the middle of the bed
+    this.bedCol = {}; // bed seat key -> colour of whoever last slept there
+    this.occ = new Map(); this.trays = {}; this.seatCol = {};            // seat key -> id of the player sitting there (max one per seat)
+    for (const p of this.players.values()) if (!p.ghost) this.unstick(p);   // nobody ends up inside a table
+  }
+  sendToBed(q) { // into a bedroom nobody else is in (or the emptiest), straight into the bed
+    const cnt = BEDROOMS.map(() => 0);
+    for (const o of this.players.values()) if (o !== q) { const i = this.roomOf(o); if (i >= 0) cnt[i]++; }
+    const i = cnt.indexOf(Math.min(...cnt)), r = BEDROOMS[i];
+    const bed = this.tables.find(t => t.k === 'bed' && t.x1 >= r.x1 && t.x1 <= r.x2 && t.y1 >= r.y1 && t.y1 <= r.y2);
+    const k = bed && dk(bed.x1, bed.y1), cur = k && this.occ.get(k);
+    if (bed && (!cur || cur === q.id)) { q.x = (bed.x1 + 0.5) * TILE; q.y = (bed.y1 + 1) * TILE; this.occ.set(k, q.id); }
+    else { const pos = this.spot(r, r.x1 + 1, r.y1 + 2, q); q.x = pos.x; q.y = pos.y; }
+    q.dx = q.dy = 0; q.target = null;
   }
   out(msg, to) { // to === undefined -> everyone (and the host's own view)
     if (!to || to === this.hostId) this.onLocal(msg);
@@ -345,6 +383,11 @@ class Host {
       case 'tz': if (dm) this.tz = Math.max(-12, Math.min(14, this.tz + Math.sign(num(m.d)))); break;
       case 'ghost': if (dm) { p.ghost = !p.ghost; if (!p.ghost) this.unstick(p); } break;
       case 'theme': if (dm) this.theme = ((Math.floor(num(m.i)) % THEMES.length) + THEMES.length) % THEMES.length; break;
+      case 'tobed': { const q = dm && this.players.get(m.id); if (q && q.role !== 'dm') this.sendToBed(q); break; }
+      case 'allbed': if (dm) for (const q of this.players.values()) if (q.role !== 'dm') this.sendToBed(q); break;
+      case 'reset': if (dm) this.resetCottage(); break;
+      case 'scenery': if (dm && SCENERY[m.v]) this.scenery = m.v; break;
+      case 'bright': if (dm && ROOM_AT[m.room]) this.bright[m.room] = Math.max(0, Math.min(1.5, num(m.v))); break;
       case 'jail': case 'release': { const q = dm && this.players.get(m.id); if (q && q.role !== 'dm') this.teleport(q, m.t === 'jail' ? 'cell' : 'bed'); break; }
       case 'kick': {
         if (!dm || m.id === id) break;
@@ -475,7 +518,7 @@ class Host {
     this.updateSeats();
     if (this.todMode === 3) this.tod = phaseAt(clockAt(this.tz).h);
     this.out({ t: 'state', open: [...this.open], locked: [...this.locked], seats: [...this.seats].map(([k, s]) => [k, s.a, s.s]),
-      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
+      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, scenery: this.scenery, bright: this.bright, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
       players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep })) });
   }
   close() {
@@ -541,7 +584,7 @@ function updateAmbience() { // runs on every state update, so it keeps working i
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
 let stopPing = () => {}, host = null, ch = null, myId = '', role = 'player', map = [], ring = [], players = [], open = new Set(), locked = new Set();
-let seats = new Map(), tables = [], rugs = [], fire = false, theme = 0, trays = {}, seatCol = {}, bedCol = {}, rain = false, tod = 0, todMode = 0, tz = 0, tool = '', lastState = 0, joinTimer = 0, drag = null;
+let seats = new Map(), tables = [], rugs = [], fire = false, theme = 0, trays = {}, seatCol = {}, bedCol = {}, scenery = 'pines', bright = {}, rain = false, tod = 0, todMode = 0, tz = 0, tool = '', lastState = 0, joinTimer = 0, drag = null;
 const shown = new Map();
 const identity = () => ({ name: $('name').value, color: $('color').value });
 const showError = m => { $('error').textContent = m; };
@@ -557,11 +600,11 @@ function onServer(m) {
     $('sesCode').textContent = m.code; $('roleTag').textContent = role === 'dm' ? 'Dungeon Master' : 'Player';
     $('dmPanel').hidden = role !== 'dm'; $('ambDm').hidden = role !== 'dm'; $('lobby').hidden = true; $('game').hidden = false;
     $('rename').value = $('name').value; $('recolor').value = $('color').value;
-    resize(); initAudio(); buildRegions(); syncMicBtn(); cam = FULL(); lastRoom = -1; myZoom = false;
+    resize(); initAudio(); buildRegions(); buildTileRooms(); lightKey = ''; syncMicBtn(); cam = FULL(); lastRoom = -1; myZoom = false;
     stopPing = makeTicker(() => send({ t: 'ping' }), 1000);
   } else if (m.t === 'state') {
     players = m.players; open = new Set(m.open); locked = new Set(m.locked); lastState = performance.now();
-    seats = new Map(m.seats.map(([k, a, s]) => [k, { a, s }])); tables = m.tables; rugs = m.rugs; fire = m.fire; theme = m.theme; rain = m.rain; tod = m.tod; trays = m.trays; bedCol = m.bedCol; seatCol = m.seatCol; todMode = m.todMode; tz = m.tz;
+    seats = new Map(m.seats.map(([k, a, s]) => [k, { a, s }])); tables = m.tables; rugs = m.rugs; fire = m.fire; theme = m.theme; rain = m.rain; tod = m.tod; trays = m.trays; bedCol = m.bedCol; seatCol = m.seatCol; scenery = m.scenery; bright = m.bright; todMode = m.todMode; tz = m.tz;
     syncVoice(); updateAmbience(); renderVolumes();
     syncZoomBtn();
     let when = TOD[tod];
@@ -573,6 +616,7 @@ function onServer(m) {
       $('fireBtn').textContent = 'Fireplace: ' + (fire ? 'On' : 'Off');
       $('cellBtn').textContent = 'Cell door: ' + (locked.has(CELL_DOOR) ? 'Locked' : 'Unlocked');
       [...$('themes').children].forEach((b, i) => b.classList.toggle('active', i === theme));
+      syncDmWorld();
       $('rainBtn').textContent = 'Rain: ' + (rain ? 'On' : 'Off'); $('rainBtn').classList.toggle('active', rain); $('fireBtn').classList.toggle('active', fire);
       [...$('todBtns').children].forEach((b, i) => b.classList.toggle('active', i === todMode));
       $('tzRow').hidden = todMode !== 3; $('tzLbl').textContent = tzLabel(tz);
@@ -641,6 +685,7 @@ function renderList() {
         btn('Direct', 'v-direct', p.direct, 'Private two-way line between you and this player, from anywhere on the map', () => send({ t: 'direct', id: p.id }));
         btn(jailed ? 'Release' : 'Dungeon', jailed ? 'rel' : 'jail', false, jailed ? 'Send back to a bedroom' : 'Send to the cell', () => send({ t: jailed ? 'release' : 'jail', id: p.id }));
         btn('Room view', 'v-zoom', p.zoomLock, p.zoomLock ? 'Room view forced on: click to give them back control' : 'Force room view on for this player', () => send({ t: 'zoomlock', id: p.id }));
+        btn('To bed', 'v-bed', false, 'Send to an empty bedroom and tuck them in', () => send({ t: 'tobed', id: p.id }));
         btn('Kick', 'kick', false, 'Remove from the session', () => send({ t: 'kick', id: p.id }));
         li.append(row);
       }
@@ -822,7 +867,8 @@ function syncZoomBtn() {
   b.disabled = locked; b.classList.toggle('on', zoomOn());
 }
 $('zoomBtn').onclick = () => { myZoom = !myZoom; syncZoomBtn(); };
-function resize() { dpr = Math.min(window.devicePixelRatio || 1, 2.5); canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr); }
+let dprCap = 2.5, slowFrames = 0;
+function resize() { dpr = Math.min(window.devicePixelRatio || 1, dprCap); canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr); }
 addEventListener('resize', resize);
 const tileAt = e => {
   const r = canvas.getBoundingClientRect(), v = view();
@@ -834,6 +880,11 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   ac?.resume?.();
   const { x, y, tx, ty } = tileAt(e), me = players.find(p => p.id === myId);
+  closeMenu();
+  if (role === 'dm' && !tool) { // DM taps a player token -> their command menu
+    const hit = players.filter(p => p.id !== myId).map(p => ({ p, d: Math.hypot((shown.get(p.id)?.x ?? p.x) - x, (shown.get(p.id)?.y ?? p.y) - y) })).filter(o => o.d <= RADIUS + 5).sort((a, b) => a.d - b.d)[0];
+    if (hit) { openMenu(hit.p.id, e.clientX, e.clientY); return; }
+  }
   if (role === 'dm' && tool) { // DM object tools
     if (tool === 'chair') send({ t: 'seat', x: tx, y: ty, back: e.shiftKey || e.button === 2 });
     else if (tool === 'erase') send({ t: 'erase', x: tx, y: ty });
@@ -867,6 +918,51 @@ function syncTools() {
 }
 for (const n of ['chair', 'table', 'erase']) $('tool-' + n).onclick = () => { tool = tool === n ? '' : n; drag = null; syncTools(); };
 $('ghostBtn').onclick = () => send({ t: 'ghost' });
+/* ---- DM: player command menu (tap a token) ---- */
+let menuFor = null;
+function openMenu(id, cx, cy) {
+  const p = players.find(q => q.id === id); if (!p) return;
+  menuFor = id; const m = $('pmenu'); m.replaceChildren();
+  const head = document.createElement('div'); head.className = 'ph'; head.innerHTML = '<span class="dot"></span><b></b>';
+  head.querySelector('.dot').style.background = p.color; head.querySelector('b').textContent = p.name; m.append(head);
+  const jailed = inCell(p);
+  const items = [
+    [p.muted ? 'Unmute' : 'Mute', p.muted, { t: 'mute', id }], [p.deaf ? 'Undeafen' : 'Deafen', p.deaf, { t: 'deafen', id }],
+    ['Talk directly', p.direct, { t: 'direct', id }], ['Force room view', p.zoomLock, { t: 'zoomlock', id }],
+    ['Send to bed', false, { t: 'tobed', id }], [jailed ? 'Release from cell' : 'Send to the dungeon', false, { t: jailed ? 'release' : 'jail', id }],
+    ['Kick', false, { t: 'kick', id }, 'kick']];
+  for (const [label, on, msg, cls] of items) {
+    const b = document.createElement('button'); b.textContent = (on ? '✓ ' : '') + label; if (on) b.classList.add('on'); if (cls) b.classList.add(cls);
+    b.onclick = ev => { ev.stopPropagation(); send(msg); closeMenu(); }; m.append(b);
+  }
+  m.hidden = false;
+  const r = $('game').getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(cx + 8, r.right - mw - 8)) + 'px'; m.style.top = Math.max(8, Math.min(cy + 8, r.bottom - mh - 8)) + 'px';
+}
+function closeMenu() { if (menuFor) { menuFor = null; $('pmenu').hidden = true; } }
+addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+addEventListener('pointerdown', e => { if (menuFor && !$('pmenu').contains(e.target) && e.target !== canvas) closeMenu(); });
+/* ---- DM: reset, everyone to bed, outside, room brightness ---- */
+let resetArm = 0;
+$('resetBtn').onclick = () => {
+  if (Date.now() - resetArm < 3000) { send({ t: 'reset' }); resetArm = 0; $('resetBtn').textContent = 'Reset the cottage'; $('resetBtn').classList.remove('warn'); return; }
+  resetArm = Date.now(); $('resetBtn').textContent = 'Click again to reset everything'; $('resetBtn').classList.add('warn');
+  setTimeout(() => { if (Date.now() - resetArm >= 2900) { $('resetBtn').textContent = 'Reset the cottage'; $('resetBtn').classList.remove('warn'); } }, 3000);
+};
+$('allBedBtn').onclick = () => send({ t: 'allbed' });
+for (const [k, n] of Object.entries(SCENERY)) { const o = document.createElement('option'); o.value = k; o.textContent = n; $('sceneSel').append(o); }
+$('sceneSel').onchange = () => send({ t: 'scenery', v: $('sceneSel').value });
+for (const [k, n] of Object.entries(ROOM_LABEL)) {
+  const row = document.createElement('label'); row.className = 'sl';
+  row.innerHTML = '<span></span><input type="range" min="0" max="150" step="5" value="100"><output>100%</output>';
+  row.firstChild.textContent = n; const inp = row.querySelector('input'); inp.dataset.room = k;
+  inp.oninput = () => { row.querySelector('output').textContent = inp.value + '%'; send({ t: 'bright', room: k, v: inp.value / 100 }); };
+  $('brightList').append(row);
+}
+function syncDmWorld() { // reflect shared state in the DM's controls without fighting a slider being dragged
+  if (document.activeElement !== $('sceneSel')) $('sceneSel').value = scenery;
+  for (const inp of $('brightList').querySelectorAll('input')) if (document.activeElement !== inp) { const v = Math.round((bright[inp.dataset.room] ?? 1) * 100); if (+inp.value !== v) { inp.value = v; inp.nextElementSibling.textContent = v + '%'; } }
+}
 /* ---- phones and tablets ---- */
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 document.body.classList.toggle('touch', isTouch);
@@ -1267,7 +1363,7 @@ function drawBedroom(b, now) {
     const tx = X + TILE * 1.18, ty = Y + TILE * 0.55;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(tx + 2, ty + 2, 14, 14); ctx.fillStyle = '#5a3d22'; ctx.fillRect(tx, ty, 14, 14); ctx.strokeStyle = dark; ctx.strokeRect(tx + 1.5, ty + 1.5, 11, 11);
     ctx.fillStyle = '#f2ead8'; ctx.beginPath(); ctx.arc(tx + 7, ty + 7, 3, 0, Math.PI * 2); ctx.fill();
-    if (tod > 0) { const f = 0.6 + 0.4 * Math.sin(now * 0.02 + b.x1); const g = ctx.createRadialGradient(tx + 7, ty + 7, 1, tx + 7, ty + 7, 30); g.addColorStop(0, `rgba(255,200,120,${0.35 * f})`); g.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = g; ctx.fillRect(tx - 24, ty - 24, 62, 62); ctx.fillStyle = '#ffcf6b'; ctx.beginPath(); ctx.arc(tx + 7, ty + 6, 1.6, 0, Math.PI * 2); ctx.fill(); }
+
     // chest at the foot of the bed, trimmed in the room colour
     const cx = b.x1 * TILE + 5, cy = (b.y2 + 1) * TILE + 6;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(cx + 2, cy + 2, TILE - 10, 18); ctx.fillStyle = '#6b4a2a'; ctx.fillRect(cx, cy, TILE - 10, 18);
@@ -1284,12 +1380,253 @@ function drawBedroom(b, now) {
   ctx.strokeStyle = dark; ctx.beginPath(); ctx.moveTo(x + 2, y + h - 12); ctx.lineTo(x + w - 2, y + h - 12); ctx.stroke();
 }
 
+/* ================= Lights and shadows =================
+   Each light casts rays across the tile grid; walls, closed doors and tall furniture stop them, so light
+   fills the room it's in and leaves shadows behind obstacles. Darkness depends on the time of day and the
+   DM's brightness setting for that room. */
+const LIGHTS = [ // x, y, radius, colour, room, kind
+  { x: 4.5 * TILE, y: 5 * TILE, r: 250, c: '255,214,150', room: 'dining', kind: 'chandelier' },
+  { x: 9.55 * TILE, y: 7.45 * TILE, r: 200, c: '255,205,140', room: 'lounge', kind: 'lamp' },
+  { x: FIRE_X, y: 46, r: 320, c: '255,140,60', room: 'lounge', kind: 'fire' },
+  { x: 2.5 * TILE, y: 10 * TILE + 5, r: 165, c: '255,190,110', room: 'corridor', kind: 'lantern' },
+  { x: 9.5 * TILE, y: 10 * TILE + 5, r: 165, c: '255,190,110', room: 'corridor', kind: 'lantern' },
+  { x: 15.5 * TILE, y: 10 * TILE + 5, r: 165, c: '255,190,110', room: 'corridor', kind: 'lantern' },
+  { x: 17 * TILE + 5, y: 6.5 * TILE, r: 140, c: '255,190,110', room: 'corridor', kind: 'lantern-side' },
+  { x: 18.6 * TILE, y: 1.25 * TILE, r: 95, c: '255,170,90', room: 'cell', kind: 'torch' },
+  ...BEDROOMS.map((b, i) => ({ x: b.x1 * TILE + TILE * 1.18 + 7, y: b.y1 * TILE + TILE * 0.55 + 7, r: 135, c: '255,200,120', room: 'bed' + (i + 1), kind: 'candle' })),
+];
+let lightKey = '', lightPolys = [], tileReg = [], regName = {}, lm = null, lmx = null, gl = null, glx = null; const LM_S = 0.5; // light layers at half resolution: soft and cheap
+function buildTileRooms() { // which room each floor, door and wall tile belongs to (for darkness)
+  regName = {}; for (const [n, [x, y]] of Object.entries(ROOM_AT)) if (regions[y]?.[x] >= 0) regName[regions[y][x]] = n;
+  tileReg = map.map((row, y) => [...row].map((c, x) => {
+    if (c === '.') return regions[y][x];
+    if (c === '#' && !ring[y][x]) return -1;
+    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]]) { const r = regions[y + dy]?.[x + dx]; if (r >= 0) return r; }
+    return -1;
+  }));
+}
+function castRay(ox, oy, dx, dy, R, solidAt) { // walk the tile grid until something solid or the light's reach
+  let tx = Math.floor(ox / TILE), ty = Math.floor(oy / TILE);
+  const sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, ddx = dx ? Math.abs(TILE / dx) : Infinity, ddy = dy ? Math.abs(TILE / dy) : Infinity;
+  let mx = dx ? ((dx > 0 ? (tx + 1) * TILE - ox : ox - tx * TILE) / Math.abs(dx)) : Infinity, my = dy ? ((dy > 0 ? (ty + 1) * TILE - oy : oy - ty * TILE) / Math.abs(dy)) : Infinity;
+  for (let n = 0; n < 64; n++) {
+    let t; if (mx < my) { t = mx; mx += ddx; tx += sx; } else { t = my; my += ddy; ty += sy; }
+    if (t >= R) return R;
+    if (solidAt(tx, ty)) return Math.min(R, t + 3); // light the face of the wall
+  }
+  return R;
+}
+function rebuildLights() {
+  const blockers = new Set(), owner = new Map();
+  tables.forEach((t, i) => { if (t.k === 'bed') return; for (let y = t.y1; y <= t.y2; y++) for (let x = t.x1; x <= t.x2; x++) { blockers.add(dk(x, y)); owner.set(dk(x, y), i); } });
+  lightPolys = LIGHTS.map(L => {
+    const own = owner.get(dk(Math.floor(L.x / TILE), Math.floor(L.y / TILE))); // a light hanging over a table isn't blocked by it
+    const solidAt = (x, y) => { const c = map[y]?.[x]; if (c === undefined || c === '#') return true; if (c === 'D') return !open.has(dk(x, y)); const k = dk(x, y); return blockers.has(k) && owner.get(k) !== own; };
+    const pts = [], N = 220;
+    for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a), d = castRay(L.x, L.y, dx, dy, L.r, solidAt); pts.push(L.x + dx * d, L.y + dy * d); }
+    return pts;
+  });
+}
+const BASE_DARK = [0, 0.4, 0.66];
+function roomDark(name) { const B = bright[name] ?? 1, base = BASE_DARK[tod]; return B <= 1 ? base + (1 - B) * (0.88 - base) : base * (2 - B); }
+function lightLevel(L, now) {
+  const B = Math.min(1, bright[L.room] ?? 1), ph = now * 0.001;
+  if (L.kind === 'fire') return fire ? 0.95 + 0.07 * Math.sin(ph * 13) * Math.sin(ph * 7.3 + 1) : 0;
+  if (L.kind === 'candle' || L.kind === 'torch') return B * (0.82 + 0.1 * Math.sin(ph * 11 + L.x) + 0.06 * Math.sin(ph * 23 + L.y));
+  return B * (0.94 + 0.03 * Math.sin(ph * 5 + L.x));
+}
+function polyPath(g, pts) { g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.closePath(); }
+function drawLighting(now) {
+  const key = map.join('') + '|' + [...open].sort().join() + '|' + JSON.stringify(tables);
+  if (key !== lightKey) { lightKey = key; if (!tileReg.length || tileReg.length !== H) buildTileRooms(); rebuildLights(); }
+  if (!lm) {
+    lm = document.createElement('canvas'); lm.width = W * TILE * LM_S; lm.height = H * TILE * LM_S; lmx = lm.getContext('2d');
+    gl = document.createElement('canvas'); gl.width = lm.width; gl.height = lm.height; glx = gl.getContext('2d');
+  }
+  const g = lmx; g.setTransform(LM_S, 0, 0, LM_S, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W * TILE, H * TILE);
+  // darkness, room by room
+  const darkOf = {}; let any = false;
+  for (const r of Object.keys(regName)) { darkOf[r] = roomDark(regName[r]); if (darkOf[r] > 0.01) any = true; }
+  if (any) {
+    for (const r of Object.keys(darkOf)) {
+      if (darkOf[r] <= 0.01) continue;
+      g.fillStyle = `rgba(6,8,22,${darkOf[r]})`; g.beginPath();
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (tileReg[y][x] == r) g.rect(x * TILE, y * TILE, TILE, TILE);
+      g.fill();
+    }
+    // lights cut through the dark, but only where their rays reach
+    g.globalCompositeOperation = 'destination-out';
+    LIGHTS.forEach((L, i) => {
+      const I = lightLevel(L, now); if (I <= 0.01) return;
+      const R = L.r * (0.97 + 0.03 * I);
+      g.save(); polyPath(g, lightPolys[i]); g.clip();
+      const gr = g.createRadialGradient(L.x, L.y, 4, L.x, L.y, R); gr.addColorStop(0, `rgba(0,0,0,${I})`); gr.addColorStop(0.45, `rgba(0,0,0,${I * 0.7})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(L.x - R, L.y - R, R * 2, R * 2); g.restore();
+    });
+    g.globalCompositeOperation = 'source-over';
+    ctx.drawImage(lm, 0, 0, W * TILE, H * TILE);
+  }
+  // warm colour of each light, added on top (stronger the darker it is)
+  const h = glx; h.setTransform(LM_S, 0, 0, LM_S, 0, 0); h.globalCompositeOperation = 'source-over'; h.clearRect(0, 0, W * TILE, H * TILE); h.globalCompositeOperation = 'lighter';
+  LIGHTS.forEach((L, i) => {
+    const I = lightLevel(L, now); if (I <= 0.01) return;
+    const k = (0.06 + 0.24 * BASE_DARK[tod] / 0.66) * I * Math.max(1, bright[L.room] ?? 1) * (L.kind === 'fire' ? 1.3 : 1); // over 100% = lamps turned up
+    h.save(); polyPath(h, lightPolys[i]); h.clip();
+    const gr = h.createRadialGradient(L.x, L.y, 2, L.x, L.y, L.r); gr.addColorStop(0, `rgba(${L.c},${k})`); gr.addColorStop(1, `rgba(${L.c},0)`);
+    h.fillStyle = gr; h.fillRect(L.x - L.r, L.y - L.r, L.r * 2, L.r * 2); h.restore();
+  });
+  ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(gl, 0, 0, W * TILE, H * TILE); ctx.globalCompositeOperation = 'source-over';
+}
+function drawFixtures(now) { // the lamps themselves
+  for (const L of LIGHTS) {
+    const I = lightLevel(L, now), lit = I > 0.05, glow = (rr, a) => { if (!lit) return; const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, rr); g.addColorStop(0, `rgba(${L.c},${a * I})`); g.addColorStop(1, `rgba(${L.c},0)`); ctx.fillStyle = g; ctx.fillRect(L.x - rr, L.y - rr, rr * 2, rr * 2); };
+    if (L.kind === 'chandelier') {
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.arc(L.x + 3, L.y + 4, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(L.x, L.y, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1.5; ctx.beginPath(); for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3; ctx.moveTo(L.x + Math.cos(a) * 13, L.y + Math.sin(a) * 13); ctx.lineTo(L.x - Math.cos(a) * 13, L.y - Math.sin(a) * 13); } ctx.stroke();
+      ctx.fillStyle = '#d6a93f'; ctx.beginPath(); ctx.arc(L.x, L.y, 3, 0, Math.PI * 2); ctx.fill();
+      for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3, cx = L.x + Math.cos(a) * 13, cy = L.y + Math.sin(a) * 13; ctx.fillStyle = '#efe6cf'; ctx.beginPath(); ctx.arc(cx, cy, 2.2, 0, Math.PI * 2); ctx.fill(); if (lit) { ctx.fillStyle = `rgba(255,210,120,${0.8 * I})`; ctx.beginPath(); ctx.arc(cx, cy, 1.3, 0, Math.PI * 2); ctx.fill(); } }
+      ctx.lineWidth = 1; glow(26, 0.35);
+    } else if (L.kind === 'lamp') {
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(L.x + 3, L.y + 3, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = lit ? '#f6e7c4' : '#cbbd9c'; ctx.beginPath(); ctx.arc(L.x, L.y, 9.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1;
+      ctx.fillStyle = '#5a3d22'; ctx.beginPath(); ctx.arc(L.x, L.y, 2.5, 0, Math.PI * 2); ctx.fill(); glow(22, 0.45);
+    } else if (L.kind === 'lantern' || L.kind === 'lantern-side') {
+      const side = L.kind === 'lantern-side';
+      ctx.fillStyle = '#2b2622'; side ? ctx.fillRect(L.x - 5, L.y - 1, 5, 2) : ctx.fillRect(L.x - 1, L.y - 5, 2, 5); // bracket
+      ctx.fillStyle = '#2b2622'; ctx.fillRect(L.x - 4, L.y - 4, 8, 9);
+      ctx.fillStyle = lit ? `rgba(255,${200 + 30 * I | 0},120,1)` : '#6a5a40'; ctx.fillRect(L.x - 2.6, L.y - 2.6, 5.2, 6.2);
+      glow(18, 0.55);
+    } else if (L.kind === 'torch') {
+      ctx.fillStyle = '#4a2f18'; ctx.fillRect(L.x - 1.5, L.y - 1, 3, 9);
+      if (lit) { ctx.fillStyle = `rgba(255,150,50,${I})`; ctx.beginPath(); ctx.ellipse(L.x, L.y - 2, 3, 4.5 + Math.sin(now * 0.02) * 0.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = `rgba(255,230,150,${I})`; ctx.beginPath(); ctx.arc(L.x, L.y - 1.5, 1.6, 0, Math.PI * 2); ctx.fill(); }
+      glow(16, 0.6);
+    } else if (L.kind === 'candle') { if (lit) { ctx.fillStyle = '#ffcf6b'; ctx.beginPath(); ctx.arc(L.x, L.y - 1, 1.7, 0, Math.PI * 2); ctx.fill(); } glow(12, 0.6); }
+  }
+}
+
+/* ================= Outside scenery (just for looks) ================= */
+const SC = { x: -560, y: -460, w: 1920, h: 1640, s: 1.1 }; // painted area around the house, cached once per scene
+const GROUND = { pines: '#2e4a2b', snow: '#dfe7ee', forest: '#3a5b2f', city: '#3b3e44', town: '#6a604f', none: null };
+let sceneCv = null, sceneKey = '', sceneLamps = [];
+function houseNear(x, y, m) { // is (x,y) on or within m px of the house?
+  for (const [dx, dy] of [[0, 0], [m, 0], [-m, 0], [0, m], [0, -m], [m, m], [-m, m], [m, -m], [-m, -m]]) {
+    const tx = Math.floor((x + dx) / TILE), ty = Math.floor((y + dy) / TILE);
+    if (tx < 0 || ty < 0 || tx >= W || ty >= H) continue;
+    if (map[ty][tx] !== '#' || ring[ty][tx]) return true;
+  }
+  return false;
+}
+function rectHitsHouse(x, y, w, h, m) { for (let yy = y; yy <= y + h; yy += 16) for (let xx = x; xx <= x + w; xx += 16) if (houseNear(xx, yy, m)) return true; return houseNear(x + w, y + h, m); }
+function pine(g, x, y, r, snow, seed) {
+  g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x + r * 0.35, y + r * 0.4, r * 1.05, r * 0.95, 0, 0, Math.PI * 2); g.fill();
+  const layers = snow ? ['#2c4a3a', '#cfdbe4', '#eef4f8'] : ['#1d3a24', '#2a5232', '#3c6b40'];
+  [1, 0.72, 0.42].forEach((k, li) => {
+    const rr = r * k, n = 9, rot = hsh(seed, li) * 6;
+    g.fillStyle = layers[li]; g.beginPath();
+    for (let i = 0; i < n * 2; i++) { const a = rot + i * Math.PI / n, q = i % 2 ? rr * 0.62 : rr; g.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); }
+    g.closePath(); g.fill();
+  });
+  g.fillStyle = snow ? '#ffffff' : '#4f8350'; g.beginPath(); g.arc(x - r * 0.12, y - r * 0.12, r * 0.14, 0, Math.PI * 2); g.fill();
+}
+function leafy(g, x, y, r, seed) {
+  g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x + r * 0.35, y + r * 0.4, r * 1.1, r, 0, 0, Math.PI * 2); g.fill();
+  const greens = ['#2f5a2a', '#3b6d30', '#4a7f38', '#5a8f3e'];
+  for (let i = 0; i < 6; i++) { const a = hsh(seed, i) * 6.28, d = r * 0.45 * hsh(i, seed), rr = r * (0.5 + 0.25 * hsh(seed + 1, i)); g.fillStyle = greens[(i + Math.floor(seed)) % 4]; g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, rr, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = 'rgba(255,255,220,.12)'; g.beginPath(); g.arc(x - r * 0.25, y - r * 0.25, r * 0.4, 0, Math.PI * 2); g.fill();
+}
+function roofHouse(g, x, y, w, h, c, ridgeAlong, chimney) { // a building seen from above with a pitched roof
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x + 5, y + 6, w, h);
+  g.fillStyle = shade(c, -0.12); g.fillRect(x, y, w, h);
+  g.fillStyle = shade(c, 0.12); ridgeAlong ? g.fillRect(x, y, w, h / 2) : g.fillRect(x, y, w / 2, h);
+  g.fillStyle = shade(c, -0.35); ridgeAlong ? g.fillRect(x, y + h / 2 - 1, w, 2) : g.fillRect(x + w / 2 - 1, y, 2, h);
+  g.strokeStyle = shade(c, -0.4); g.lineWidth = 0.6; g.globalAlpha = 0.5; g.beginPath();
+  if (ridgeAlong) for (let k = 5; k < h; k += 5) { g.moveTo(x, y + k); g.lineTo(x + w, y + k); } else for (let k = 5; k < w; k += 5) { g.moveTo(x + k, y); g.lineTo(x + k, y + h); }
+  g.stroke(); g.globalAlpha = 1; g.lineWidth = 1;
+  if (chimney) { g.fillStyle = '#5a4a40'; g.fillRect(x + w * 0.7, y + h * 0.15, 7, 7); g.fillStyle = '#2a2420'; g.fillRect(x + w * 0.7 + 2, y + h * 0.15 + 2, 3, 3); }
+}
+function buildScene(kind) {
+  const cv = document.createElement('canvas'); cv.width = Math.round(SC.w * SC.s); cv.height = Math.round(SC.h * SC.s);
+  const g = cv.getContext('2d'); g.scale(SC.s, SC.s); g.translate(-SC.x, -SC.y); sceneLamps = [];
+  const ground = GROUND[kind];
+  g.fillStyle = ground; g.fillRect(SC.x, SC.y, SC.w, SC.h);
+  for (let i = 0; i < 2600; i++) { const x = SC.x + hsh(i, 1) * SC.w, y = SC.y + hsh(2, i) * SC.h; g.fillStyle = shade(ground, (hsh(i, 3) - 0.5) * 0.25); g.fillRect(x, y, 2 + hsh(i, 4) * 3, 2 + hsh(5, i) * 3); } // texture
+  // a path from the front of the house
+  if (kind !== 'city') { g.fillStyle = kind === 'snow' ? '#c9d3dc' : shade(ground, kind === 'town' ? 0.15 : -0.1); g.fillRect(-SC.w, 330, -SC.x - 8 + SC.w, 60); }
+  const grid = (step, fn) => { for (let y = SC.y + step / 2; y < SC.y + SC.h; y += step) for (let x = SC.x + step / 2; x < SC.x + SC.w; x += step) fn(x + (hsh(x, y) - 0.5) * step * 0.7, y + (hsh(y, x) - 0.5) * step * 0.7, hsh(x * 0.13, y * 0.17)); };
+  if (kind === 'pines' || kind === 'snow') {
+    grid(64, (x, y, h) => { const r = 20 + h * 16; if (!houseNear(x, y, r + 6) && !(y > 310 && y < 410 && x < 0)) pine(g, x, y, r, kind === 'snow', x + y); });
+    if (kind === 'snow') for (let i = 0; i < 400; i++) { g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.arc(SC.x + hsh(i, 9) * SC.w, SC.y + hsh(9, i) * SC.h, 1 + hsh(i, 8) * 2, 0, Math.PI * 2); g.fill(); }
+  } else if (kind === 'forest') {
+    grid(58, (x, y, h) => { const r = 18 + h * 18; if (houseNear(x, y, r + 6) || (y > 310 && y < 410 && x < 0)) return; h > 0.82 ? pine(g, x, y, r * 0.8, false, x) : leafy(g, x, y, r, x + y); });
+    for (let i = 0; i < 160; i++) { const x = SC.x + hsh(i, 11) * SC.w, y = SC.y + hsh(11, i) * SC.h; if (houseNear(x, y, 10)) continue; g.fillStyle = ['#d94f4f', '#f2d16b', '#ffffff', '#b07ad9'][i % 4]; g.fillRect(x, y, 2, 2); } // wildflowers
+  } else if (kind === 'city') {
+    const BL = 230, RD = 46;
+    for (let by = SC.y; by < SC.y + SC.h; by += BL) for (let bx = SC.x; bx < SC.x + SC.w; bx += BL) {
+      // roads
+      g.fillStyle = '#2c2f34'; g.fillRect(bx, by, BL, RD); g.fillRect(bx, by, RD, BL);
+      g.fillStyle = '#d8c25a'; for (let k = 8; k < BL; k += 22) { g.fillRect(bx + RD + k, by + RD / 2 - 1, 12, 2); g.fillRect(bx + RD / 2 - 1, by + RD + k, 2, 12); }
+      g.fillStyle = '#8d9096'; g.fillRect(bx + RD, by + RD, BL - RD, 6); g.fillRect(bx + RD, by + RD, 6, BL - RD); // pavement
+      sceneLamps.push([bx + RD + 4, by + RD + 4]);
+      // buildings in the block
+      const pad = RD + 10, cells = 2, cs = (BL - pad) / cells;
+      for (let j = 0; j < cells; j++) for (let i = 0; i < cells; i++) {
+        const x = bx + pad + i * cs + 4, y = by + pad + j * cs + 4, w = cs - 12 - hsh(x, y) * 14, h = cs - 12 - hsh(y, x) * 14;
+        if (rectHitsHouse(x - 6, y - 6, w + 12, h + 12, 10)) continue;
+        const c = ['#6d6f75', '#7a6458', '#57606b', '#8a7f72', '#5e5a63'][Math.floor(hsh(x, y + 1) * 5)];
+        g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x + 6, y + 7, w, h); g.fillStyle = c; g.fillRect(x, y, w, h);
+        g.strokeStyle = shade(c, 0.25); g.lineWidth = 2; g.strokeRect(x + 1, y + 1, w - 2, h - 2); g.lineWidth = 1;
+        for (let k = 0; k < 3; k++) { g.fillStyle = shade(c, -0.2); g.fillRect(x + 6 + hsh(k, x) * (w - 18), y + 6 + hsh(y, k) * (h - 18), 9, 7); } // roof units
+      }
+    }
+  } else if (kind === 'town') {
+    // cobbled lanes
+    g.fillStyle = shade(ground, 0.2);
+    for (let y = SC.y; y < SC.y + SC.h; y += 220) g.fillRect(SC.x, y, SC.w, 38);
+    for (let x = SC.x; x < SC.x + SC.w; x += 260) g.fillRect(x, SC.y, 38, SC.h);
+    for (let i = 0; i < 5000; i++) { const x = SC.x + hsh(i, 21) * SC.w, y = SC.y + hsh(21, i) * SC.h; g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x, y, 3, 2); }
+    const roofs = ['#9a4a32', '#b0603c', '#8a6a3a', '#c9a45a', '#7a4030'];
+    for (let y = SC.y + 50; y < SC.y + SC.h; y += 110) for (let x = SC.x + 52; x < SC.x + SC.w; x += 130) {
+      const w = 70 + hsh(x, y) * 30, h = 52 + hsh(y, x) * 20, xx = x + hsh(x + 1, y) * 10, yy = y + hsh(x, y + 1) * 10;
+      if ((Math.floor((yy - SC.y) / 220) !== Math.floor((yy + h - SC.y) / 220)) || rectHitsHouse(xx - 8, yy - 8, w + 16, h + 16, 12)) continue;
+      const k = hsh(x * 3, y);
+      if (k < 0.14) { // market stall
+        for (let s2 = 0; s2 < 6; s2++) { g.fillStyle = s2 % 2 ? '#f2ead8' : ['#b03a2e', '#2f6a9a', '#3c8a46'][Math.floor(hsh(x, y) * 3)]; g.fillRect(xx + s2 * 8, yy + 10, 8, 26); }
+        sceneLamps.push([xx + 24, yy + 44]);
+      } else if (k < 0.22) { // well
+        g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.arc(xx + 24, yy + 26, 17, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#8a8478'; g.beginPath(); g.arc(xx + 20, yy + 22, 16, 0, Math.PI * 2); g.fill(); g.fillStyle = '#2c3e52'; g.beginPath(); g.arc(xx + 20, yy + 22, 9, 0, Math.PI * 2); g.fill();
+      } else if (k < 0.3) leafy(g, xx + 30, yy + 26, 22, x + y);
+      else { roofHouse(g, xx, yy, w, h, roofs[Math.floor(hsh(xx, yy) * 5)], h < w, hsh(yy, xx) > 0.4); if (hsh(x, y + 7) > 0.6) sceneLamps.push([xx + w + 8, yy + h + 6]); }
+    }
+  }
+  return cv;
+}
+function drawScenery(now) { // world space, before the house
+  if (!GROUND[scenery]) return;
+  if (sceneKey !== scenery + map.length) { sceneCv = buildScene(scenery); sceneKey = scenery + map.length; }
+  ctx.fillStyle = GROUND[scenery]; ctx.fillRect(-4000, -4000, 8800, 8800);
+  ctx.drawImage(sceneCv, SC.x, SC.y, SC.w, SC.h);
+}
+function drawSceneLights(now) { // street lamps and lanterns outside, evening and night
+  if (!GROUND[scenery] || tod === 0 || !sceneLamps.length) return;
+  ctx.globalCompositeOperation = 'lighter';
+  for (const [x, y] of sceneLamps) {
+    const g = ctx.createRadialGradient(x, y, 1, x, y, 46); g.addColorStop(0, `rgba(255,200,120,${tod === 2 ? 0.55 : 0.3})`); g.addColorStop(1, 'rgba(255,200,120,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - 46, y - 46, 92, 92);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#ffe2a0'; for (const [x, y] of sceneLamps) { ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill(); }
+}
+
 /* ---- outside, windows, time of day ---- */
 const OUT_TINT = ['rgba(70,140,235,0.3)', 'rgba(255,120,50,0.18)', 'rgba(5,10,40,0.6)'];
 const IN_TINT = ['rgba(120,170,255,0.05)', 'rgba(255,140,60,0.07)', 'rgba(8,12,40,0.32)'];
 function drawOutside(now) { // whole canvas; the house is drawn on top of it
-  if (OUT_TINT[tod]) { ctx.fillStyle = OUT_TINT[tod]; ctx.fillRect(0, 0, CW(), CH()); }
-  if (tod === 2 && !rain) { ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 60; i++) { const x = (i * 7919 % 997) / 997 * CW(), y = (i * 104729 % 991) / 991 * CH(), tw = 0.6 + 0.4 * Math.sin(now * 0.002 + i); ctx.globalAlpha = 0.35 * tw; ctx.fillRect(x, y, 1.5, 1.5); } ctx.globalAlpha = 1; }
+  const tint = GROUND[scenery] ? ['rgba(150,190,255,0.06)', 'rgba(255,120,50,0.2)', 'rgba(5,10,40,0.58)'][tod] : OUT_TINT[tod]; // scenery keeps its own colours by day
+  if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, CW(), CH()); }
+  if (tod === 2 && !rain && !GROUND[scenery]) { ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 60; i++) { const x = (i * 7919 % 997) / 997 * CW(), y = (i * 104729 % 991) / 991 * CH(), tw = 0.6 + 0.4 * Math.sin(now * 0.002 + i); ctx.globalAlpha = 0.35 * tw; ctx.fillRect(x, y, 1.5, 1.5); } ctx.globalAlpha = 1; }
   if (!rain) return;
   const W_ = CW(), H_ = CH(), night = tod === 2;
   ctx.fillStyle = 'rgba(40,50,70,0.2)'; ctx.fillRect(0, 0, W_, H_);
@@ -1300,7 +1637,7 @@ function drawOutside(now) { // whole canvas; the house is drawn on top of it
     ctx.fillStyle = g; ctx.fillRect(mx - 300, my - 300, 600, 600);
   }
   // splashes where drops land
-  const ns = Math.round(W_ * H_ / 9000);
+  const ns = scenery === 'snow' ? 0 : Math.round(W_ * H_ / 9000);
   ctx.lineWidth = 0.9;
   for (let i = 0; i < ns; i++) {
     const per = 520 + hsh(i, 4) * 400, cyc = Math.floor((now + hsh(i, 8) * per) / per), t = ((now + hsh(i, 8) * per) % per) / per;
@@ -1308,6 +1645,14 @@ function drawOutside(now) { // whole canvas; the house is drawn on top of it
     ctx.strokeStyle = night ? `rgba(150,170,220,${(1 - t) * 0.5})` : `rgba(215,228,245,${(1 - t) * 0.6})`;
     ctx.beginPath(); ctx.ellipse(sx, sy, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
     if (t < 0.25) { ctx.fillStyle = ctx.strokeStyle; ctx.fillRect(sx - 2.5 + t * 4, sy - 2 - t * 10, 1, 1); ctx.fillRect(sx + 2 - t * 4, sy - 1.5 - t * 9, 1, 1); }
+  }
+  if (scenery === 'snow') { // snowfall instead of rain
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    for (const [dens, sz, sp] of [[2200, 1.2, 30], [5000, 2, 55], [11000, 3, 85]]) {
+      const n = Math.round(W_ * H_ / dens);
+      for (let i = 0; i < n; i++) { const y = ((now * sp / 1000 + hsh(sz, i) * (H_ + 40)) % (H_ + 40)) - 20, x = hsh(i, sp) * (W_ + 40) - 20 + Math.sin(now * 0.001 + i) * 12; ctx.globalAlpha = 0.5 + 0.5 * hsh(i, sz); ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.globalAlpha = 1; return;
   }
   // falling rain in three depths (far: small, faint, slow; near: long, bright, fast)
   const wind = 0.22;
@@ -1369,9 +1714,12 @@ function frame(now) {
   const T = themeOf(theme);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = T.bg; ctx.fillRect(0, 0, CW(), CH());
+  if (map.length) { const v0 = view(); ctx.save(); ctx.translate(v0.ox, v0.oy); ctx.scale(v0.s, v0.s); drawScenery(now); ctx.restore(); }
   if (map.length) drawOutside(now);
+  if (map.length) { const v1 = view(); ctx.save(); ctx.translate(v1.ox, v1.oy); ctx.scale(v1.s, v1.s); drawSceneLights(now); ctx.restore(); }
   if (map.length) {
     const dt = Math.min(100, now - (frame.last || now)); frame.last = now;
+    if (!document.hidden) { slowFrames = dt > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 2); if (slowFrames > 90 && dprCap > 1) { dprCap = Math.max(1, dprCap - 0.75); slowFrames = 0; resize(); } } // struggling device: draw fewer pixels
     const tg = camTarget(), k = 1 - Math.pow(0.86, dt / 16.7); // same glide speed whatever the frame rate
     for (const key of ['x', 'y', 'w', 'h']) cam[key] += Math.abs(tg[key] - cam[key]) < 1 ? tg[key] - cam[key] : (tg[key] - cam[key]) * k;
     const v = view(); ctx.save(); ctx.translate(v.ox, v.oy); ctx.scale(v.s, v.s);
@@ -1428,13 +1776,9 @@ function frame(now) {
     }
     ctx.fillStyle = T.wall; ctx.globalAlpha = 0.9; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
     ctx.fillText('CELL', 18 * TILE, 2 * TILE + 4); ctx.globalAlpha = 1;
-    drawIndoorLight();
     for (const w of WINDOWS) drawWindow(T, w, now);
-    if (fire) { // warm light over the living room
-      ctx.save(); ctx.beginPath(); ctx.rect(9 * TILE, TILE, 7 * TILE, 8 * TILE); ctx.clip();
-      const g = ctx.createRadialGradient(FIRE_X, 50, 10, FIRE_X, 50, 250), a = 0.17 + 0.04 * Math.sin(now * 0.011) + 0.02 * Math.sin(now * 0.027);
-      g.addColorStop(0, `rgba(255,150,60,${a * (tod === 2 ? 1.7 : tod === 1 ? 1.25 : 1)})`); g.addColorStop(1, 'rgba(255,150,60,0)'); ctx.fillStyle = g; ctx.fillRect(9 * TILE, TILE, 7 * TILE, 8 * TILE); ctx.restore();
-    }
+    drawFixtures(now);
+    drawLighting(now);
     if (drag) {
       const x1 = Math.min(drag.a[0], drag.b[0]), x2 = Math.max(drag.a[0], drag.b[0]), y1 = Math.min(drag.a[1], drag.b[1]), y2 = Math.max(drag.a[1], drag.b[1]);
       ctx.fillStyle = 'rgba(130,200,120,.35)'; ctx.fillRect(x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE);

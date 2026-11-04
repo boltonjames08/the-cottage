@@ -1,0 +1,1463 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#2c1b0e"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>The Cottage</title>
+<style>
+:root{--ink:#eadbc4;--muted:#b9a789;--faint:#8f7d63;--edge:#5a3a22;--line:#4a3020;--brass:#c8913a;
+--wood:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.14)),repeating-linear-gradient(93deg,#3b2616 0 3px,#34210f 3px 7px,#3e2817 7px 9px,#2f1d0e 9px 14px,#392414 14px 23px,#31200f 23px 27px);
+--woodDark:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.25)),repeating-linear-gradient(91deg,#2c1b0e 0 4px,#27170b 4px 9px,#301e10 9px 12px,#24150a 12px 19px)}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:#140d07;color:var(--ink);height:100vh}
+h1,h3,h4{font-family:Georgia,'Times New Roman',serif;color:#f0dcb8;letter-spacing:.02em}
+#lobby{max-width:360px;margin:9vh auto;display:flex;flex-direction:column;gap:14px;padding:24px 22px;background:var(--wood);border:1px solid var(--edge);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+h1{margin:0 0 8px;font-weight:600;font-size:30px;text-align:center;text-shadow:0 2px 0 rgba(0,0,0,.5)}label{display:flex;justify-content:space-between;align-items:center;gap:10px;white-space:nowrap}#lobby label input:not([type=color]){flex:1;min-width:0}
+.row{display:flex;gap:8px}
+input,button{font:inherit;padding:8px 10px;border-radius:6px;border:1px solid var(--edge);background:#22150b;color:inherit}
+input:focus{outline:2px solid var(--brass);outline-offset:0}
+input[type=color]{padding:0;width:48px;height:34px}
+button{cursor:pointer;background:linear-gradient(#7a4a24,#5c3517);border-color:#9a6a3c;color:#f6ead6;text-shadow:0 1px 0 rgba(0,0,0,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.4)}
+button:hover{filter:brightness(1.13)}button:disabled{cursor:default;filter:none}
+#code{text-transform:uppercase;width:90px}#error{color:#ff9a8a;min-height:1em;margin:0}.note{color:var(--faint);font-size:13px;margin:0}
+#swatches{display:flex;flex-wrap:wrap;gap:8px}.sw{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}.sw.sel{border-color:#f6ead6;box-shadow:0 0 0 2px var(--brass)}
+#game{display:flex;flex-direction:column;height:100vh}
+header{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--wood);border-bottom:2px solid #1c1108;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
+.grow{flex:1}#roleTag{background:#5a3a22;border:1px solid #7a5232;padding:2px 8px;border-radius:10px;font-size:12px}input#recolor{width:34px;height:34px}
+main{flex:1;display:flex;min-height:0;position:relative}
+canvas{flex:1;min-width:0;width:100%;background:#120c08}
+aside{width:250px;padding:12px;background:var(--wood);border-left:2px solid #1c1108;box-shadow:-2px 0 8px rgba(0,0,0,.45);overflow:auto}
+aside h3,aside h4{margin:.6em 0 .3em}aside p{color:var(--muted);margin:.3em 0;font-size:13px}
+aside section>button,#tab-ctl>button{width:100%;margin:3px 0}#dmPanel{border-top:1px solid var(--line);margin-top:12px;padding-top:4px}
+footer{padding:6px 12px;color:var(--faint);font-size:13px;background:var(--woodDark);border-top:2px solid #1c1108}
+/* secondary buttons */
+.tools button,#themes button,#todBtns button,#tzRow button,li button{background:linear-gradient(#3e2715,#2f1c0e);border-color:var(--edge)}
+.tools{display:flex;gap:4px}.tools button{flex:1;padding:6px 4px}
+/* "on" states: brass */
+.tools button.active,#todBtns button.active,#zoomBtn.on,li button.v-zoom.on,.tabs button.active{background:linear-gradient(#dcaa50,#b07a26);border-color:#f0c46a;color:#2a1a0c;text-shadow:none}
+#zoomBtn:disabled{opacity:1}
+#micBtn.off{background:linear-gradient(#8f2a20,#6a1c14);border-color:#b8463a}
+.tabs{display:flex;gap:4px;margin:6px 0 8px;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;padding:6px;color:var(--muted);box-shadow:none;text-shadow:none}
+.tabs button.active{background:transparent;color:#f6ead6;border-bottom-color:var(--brass)}
+/* ambience drawer */
+#amb{position:absolute;left:12px;bottom:12px;width:250px;max-width:calc(100% - 24px);background:var(--wood);border:1px solid var(--edge);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);overflow:hidden;z-index:2}
+#ambHead{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:0;padding:8px 12px;font-size:13px;text-align:left;box-shadow:none}
+#ambHead:hover{background:rgba(255,255,255,.05);filter:none}#ambSum{flex:1;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ambArrow{color:var(--muted)}
+#ambBody{padding:10px 12px 6px;border-bottom:1px solid var(--line)}#amb.folded #ambBody{display:none}
+#ambDm{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}#ambDm .tools button{font-size:13px}.amb-note{color:var(--faint);font-size:12px;margin:4px 0 0}
+#todBtns{margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px}#todBtns button{font-size:13px;padding:6px 4px}
+#tzRow{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}#tzRow span{flex:1}#tzRow button{padding:2px 10px}#tzRow b{min-width:54px;text-align:center;color:var(--ink)}
+/* player list */
+ul{list-style:none;padding:0;margin:0}li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}
+li .dot{width:12px;height:12px;border-radius:50%;transition:box-shadow .15s}li .nm{flex:1;overflow:hidden;text-overflow:ellipsis}
+li .btns{width:100%;display:flex;flex-wrap:wrap;gap:3px;padding-left:18px}li button{padding:2px 6px;font-size:11px}
+li button.kick{background:linear-gradient(#9a3226,#74221a);border-color:#b8463a}
+li button.jail{background:linear-gradient(#b8741a,#8c5512);border-color:#d6943a}li button.rel{background:linear-gradient(#3c8a46,#2a6a33);border-color:#5aaa62}
+li button.v-mute.on,li button.v-deaf.on{background:linear-gradient(#c0392b,#962a1f);border-color:#e06050;color:#fff}
+li button.v-direct.on{background:linear-gradient(#ffd96a,#d6a93f);border-color:#ffe08a;color:#1a1a1a;text-shadow:none}
+/* sliders */
+.sl{display:grid;grid-template-columns:82px 1fr 38px;align-items:center;gap:6px;font-size:13px;margin:4px 0}.sl input{padding:0;width:100%;accent-color:var(--brass);background:transparent;border:0}
+.sl output{text-align:right;color:var(--muted);font-size:12px}.sl .who{display:flex;align-items:center;gap:5px;overflow:hidden;white-space:nowrap}.sl .dot{width:10px;height:10px;border-radius:50%;flex:none}
+/* theme swatches */
+#themes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}#themes button{padding:0;height:34px;font-size:11px;color:#fff;text-shadow:0 1px 2px #000;border-width:2px}
+#themes button.active{outline:2px solid var(--brass);outline-offset:1px}
+aside::-webkit-scrollbar{width:8px}aside::-webkit-scrollbar-thumb{background:#5a3a22;border-radius:4px}
+#hideBtn{position:absolute;top:10px;left:12px;z-index:4;padding:5px 10px;font-size:13px;opacity:.85}
+#hideBtn:hover{opacity:1}
+body.ui-hidden header,body.ui-hidden aside,body.ui-hidden footer,body.ui-hidden #amb{display:none!important}
+body.ui-hidden #hideBtn{opacity:.45}body.ui-hidden #hideBtn:hover{opacity:1}
+/* ---- phones & tablets ---- */
+canvas{touch-action:none;-webkit-user-select:none;user-select:none}
+#panelBtn{display:none}
+#stick{display:none;position:absolute;right:18px;bottom:18px;width:120px;height:120px;border-radius:50%;z-index:3;touch-action:none;
+  background:radial-gradient(circle,rgba(60,38,20,.55),rgba(30,18,9,.55));border:2px solid rgba(200,145,58,.5);box-shadow:0 4px 14px rgba(0,0,0,.45)}
+#stick>div{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:linear-gradient(#dcaa50,#9c6a22);border:2px solid #f0c46a;box-shadow:0 2px 6px rgba(0,0,0,.5);transition:transform .08s}
+#stick.on>div{transition:none}
+body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
+@media (max-width: 820px), (max-height: 520px) {
+  body{height:100dvh}#game{height:100dvh}
+  header{gap:6px;padding:6px 8px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}header::-webkit-scrollbar{display:none}
+  header>*{flex:none}header button{padding:6px 9px;font-size:13px}header .ses{font-size:13px;white-space:nowrap}#roleTag{white-space:nowrap}
+  #rename{width:96px}.grow{flex:1 0 4px}
+  #panelBtn{display:inline-block}
+  aside{position:absolute;top:0;right:0;bottom:0;width:min(300px,88vw);z-index:5;transform:translateX(105%);transition:transform .22s ease;box-shadow:-6px 0 20px rgba(0,0,0,.6)}
+  body.panel-open aside{transform:none}body.panel-open #panelBtn{background:linear-gradient(#dcaa50,#b07a26);color:#2a1a0c;text-shadow:none}
+  footer{display:none}
+  #amb{width:min(250px,calc(100% - 160px));bottom:12px}
+  #lobby{margin:4vh 12px;max-width:none}#lobby .row button{flex:1}
+  li button{padding:5px 8px;font-size:12px}.tools button{padding:8px 4px}
+}
+@media (max-width: 820px) and (min-width: 400px) { #lobby{max-width:380px;margin:6vh auto} }
+[hidden]{display:none!important}
+</style></head>
+<body>
+<section id="lobby">
+  <h1>The Cottage</h1>
+  <label>Character name <input id="name" maxlength="20" placeholder="e.g. Thorin"></label>
+  <label>Token colour <input id="color" type="color" value="#4aa3ff" title="Custom colour"></label>
+  <div id="swatches"></div>
+  <div class="row"><button id="create">Create session (as DM)</button></div>
+  <div class="row"><input id="code" maxlength="4" placeholder="CODE"><button id="join">Join session</button></div>
+  <p id="error"></p>
+  <p class="note">Single-file version: players join from other tabs/windows of this same browser. The DM tab runs the session, so keep it open.</p>
+</section>
+<section id="game" hidden>
+  <header>
+    <span class="ses">Session <b id="sesCode"></b></span><span id="roleTag"></span><span class="grow"></span>
+    <button id="zoomBtn">Room view: Off</button><button id="micBtn">Connect mic</button><button id="mute">Sound: On</button><input id="recolor" type="color" title="Change your colour"><input id="rename" maxlength="20"><button id="renameBtn">Rename</button><button id="leave">Leave</button><button id="panelBtn" title="Show the side panel">Panel</button>
+  </header>
+  <main><canvas id="canvas"></canvas>
+    <div id="stick" aria-label="Move"><div></div></div>
+    <button id="hideBtn" title="Hide or show all the controls (H)">Hide UI</button>
+    <div id="amb" class="folded">
+      <div id="ambBody">
+        <div id="ambDm">
+          <div class="tools"><button id="fireBtn">Fireplace: Off</button><button id="rainBtn">Rain: Off</button></div>
+          <div id="todBtns"></div>
+          <div id="tzRow" hidden><span>Time zone</span><button id="tzDown" title="One hour earlier">−</button><b id="tzLbl">GMT</b><button id="tzUp" title="One hour later">+</button></div>
+        </div>
+        <label class="sl"><span>Fireplace</span><input id="volFire" type="range" min="0" max="200" step="5"><output></output></label>
+        <label class="sl"><span>Rain</span><input id="volRain" type="range" min="0" max="200" step="5"><output></output></label>
+        <p class="amb-note">Volumes only change what you hear.</p>
+      </div>
+      <button id="ambHead" aria-expanded="false"><span>Ambience</span><span id="ambSum"></span><span id="ambArrow">▴</span></button>
+    </div>
+    <aside id="side">
+    <section id="soundPanel">
+      <h3>Voices</h3>
+      <p>Only changes what you hear.</p>
+      <div id="vlist"></div>
+    </section>
+    <section id="dmPanel" hidden>
+      <h3>DM controls</h3>
+      <div class="tabs"><button data-tab="ctl" class="active">Controls</button><button data-tab="ply">Players</button></div>
+      <div id="tab-ctl">
+      <p>Door: click = open/close, Shift or right-click (or press and hold on a touch screen) = lock/unlock.</p>
+      <button id="ghostBtn">Walk through walls: Off</button>
+      <button id="cellBtn">Cell door: Locked</button>
+      <h4>Colour theme</h4><div id="themes"></div>
+      <h4>Objects</h4>
+      <div class="tools"><button id="tool-chair">Chair</button><button id="tool-table">Table</button><button id="tool-erase">Erase</button></div>
+      <p id="toolHint"></p>
+      </div>
+      <div id="tab-ply" hidden>
+      <h4>Room view</h4>
+      <p>Force a player's view to the room they're in. They can't zoom out until you release it.</p>
+      <div class="tools"><button id="zoomAllOn">Force all</button><button id="zoomAllOff">Release all</button></div>
+      <h4>Players &amp; voice</h4>
+      <p>Mute: the room can't hear them. Deafen: they can't hear anyone. Direct: a private line with you from anywhere; while one is open only those players hear you.</p>
+      <ul id="plist"></ul>
+      </div>
+    </section>
+    </aside>
+  </main>
+  <footer>Move: WASD / arrows or click (on a phone: tap or use the joystick). H hides the controls. Click nearby doors and the fireplace to use them. Click a chair to sit or a bed to sleep. Connect your mic to talk: you're heard by people in the same room.</footer>
+</section>
+<script>
+"use strict";
+/* ================= Shared: map, furniture, themes ================= */
+const TILE = 40, RADIUS = 14, W = 20, H = 18, SPEED = 180, DOOR_RANGE = 70, SNAP_R = 24, STICK = 0.5;
+const MAX_SEATS = 80, MAX_TABLES = 40, MAX_SIDE = 12, FIRE_X = 500, FIRE_Y = 40, FIRE_RANGE = 170;
+const CELL_DOOR = '17,3', CELL = { x1: 17, y1: 1, x2: 18, y2: 2 };
+const BEDROOMS = [{ x1: 1, y1: 13, x2: 4, y2: 16 }, { x1: 6, y1: 13, x2: 9, y2: 16 }, { x1: 11, y1: 13, x2: 14, y2: 16 }, { x1: 16, y1: 13, x2: 18, y2: 16 }];
+const dk = (x, y) => x + ',' + y;
+function buildMap() {
+  const g = Array.from({ length: H }, () => Array(W).fill('#'));
+  const carve = (x1, y1, x2, y2) => { for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) g[y][x] = '.'; };
+  carve(1, 1, 7, 8); carve(9, 1, 15, 8);        // dining room, living room
+  carve(1, 10, 18, 11);                          // main corridor
+  carve(17, 4, 17, 9); carve(17, 1, 18, 2);      // passage up to the cell, and the cell
+  for (const r of BEDROOMS) carve(r.x1, r.y1, r.x2, r.y2);
+  for (const [x, y] of [[8, 5], [4, 9], [12, 9], [17, 3], [3, 12], [8, 12], [13, 12], [18, 12]]) g[y][x] = 'D'; // every 1-tile gap is a door
+  return g.map(r => r.join(''));
+}
+// Default furniture. Blocking objects have a kind (table/shelf/bed); chairs/sofas are seats; rugs are decoration.
+const OBJ0 = [{ k: 'table', x1: 3, y1: 3, x2: 5, y2: 6, decor: true }, { k: 'shelf', x1: 1, y1: 1, x2: 1, y2: 2 }, { k: 'shelf', x1: 7, y1: 1, x2: 7, y2: 2 },
+  { k: 'bed', x1: 1, y1: 13, x2: 1, y2: 14 }, { k: 'bed', x1: 6, y1: 13, x2: 6, y2: 14 }, { k: 'bed', x1: 11, y1: 13, x2: 11, y2: 14 }, { k: 'bed', x1: 16, y1: 13, x2: 16, y2: 14 }];
+const RUG0 = [{ x1: 11, y1: 3, x2: 13, y2: 4, decor: true }];
+const TRAY_SEATS = ['2,4', '2,6', '6,4', '6,6'];
+const SEAT0 = [[4, 2, 0, 'throne'], [2, 4, 270, 'chair'], [2, 6, 270, 'chair'], [6, 4, 90, 'chair'], [6, 6, 90, 'chair'], [10, 2, 315, 'throne'],
+  [14, 2, 90, 'sofa'], [14, 3, 90, 'sofa'], [14, 4, 90, 'sofa'], [14, 5, 90, 'corner'], [13, 5, 180, 'sofa'], [10, 5, 180, 'sofa'], [11, 5, 180, 'sofa']];
+// Windows in the outer walls: [x, y, barred]. Orientation and inside direction are worked out from the map.
+const WINDOWS = [[3, 0], [5, 0], [0, 3], [0, 6], [0, 15], [3, 17], [8, 17], [13, 17], [17, 17], [19, 10], [19, 15], [18, 0, true]];
+const TOD = ['Day', 'Evening', 'Night'];
+/* Real-time mode: GMT plus the DM's hour offset, on a fixed schedule (no seasons). */
+const phaseAt = h => h >= 7 && h < 18 ? 0 : (h >= 18 && h < 21) || (h >= 5 && h < 7) ? 1 : 2;
+const clockAt = tz => { const d = new Date(Date.now() + tz * 3600e3); return { h: d.getUTCHours(), m: d.getUTCMinutes() }; };
+const tzLabel = tz => 'GMT' + (tz ? (tz > 0 ? '+' : '−') + Math.abs(tz) : '');
+const WALL_SHELVES = [[9, 1, 10, 1], [14, 1, 15, 1]];   // bookshelves along the living-room's top wall; fireplace between them
+
+const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const THEMES = [
+  { n: 'Dungeon', bg: '#0e0f12', wall: '#3a3d46', f1: '#23262d', f2: '#292d35', door: '#a8742a', chair: '#6b4f2a', rug: '#5a1f2b', sofa: '#8e3a35', table: '#6f5232' },
+  { n: 'Blueprint', bg: '#6a93b8', wall: '#4a7396', f1: '#f4f7fa', f2: '#e8eef4', door: '#ffffff', chair: '#5a4636', rug: '#4a1e26', sofa: '#e5806c', table: '#4b3726' },
+  { n: 'Tavern', bg: '#1c130c', wall: '#5c3b22', f1: '#7b5733', f2: '#84613a', door: '#d29a45', chair: '#4a2f1a', rug: '#7a2a24', sofa: '#a5472f', table: '#573a20' },
+  { n: 'Forest', bg: '#0b150e', wall: '#2d4a34', f1: '#3b5b40', f2: '#416547', door: '#b59a4f', chair: '#5b4426', rug: '#2a4f5b', sofa: '#6a4b8c', table: '#5a4325' },
+  { n: 'Crypt', bg: '#090912', wall: '#35344d', f1: '#1f1f2e', f2: '#252537', door: '#7478b5', chair: '#4a4560', rug: '#3a1d4a', sofa: '#5a3a7a', table: '#3e3a52' },
+  { n: 'Royal', bg: '#130c1d', wall: '#4c2f6d', f1: '#37254a', f2: '#3d2a52', door: '#d6a93f', chair: '#7a2a3a', rug: '#6a1f3a', sofa: '#2f4f8a', table: '#5a3a20' }];
+const themeCache = [];
+function themeOf(i) {
+  if (themeCache[i]) return themeCache[i];
+  const t = THEMES[i] || THEMES[0];
+  return themeCache[i] = { ...t, doorOpen: mix(t.door, t.bg, 0.6), back: mix(t.chair, '#ffffff', 0.2), trim: mix(t.rug, '#ffffff', 0.25),
+    ttrim: mix(t.table, '#ffffff', 0.22), shelf: mix(t.wall, '#000000', 0.4), hearth: mix(t.wall, '#ffffff', 0.12), sofaBack: mix(t.sofa, '#000000', 0.25), cushion: mix(t.sofa, '#ffffff', 0.12) };
+}
+
+/* ================= Shared: collision ================= */
+const solid = (map, open, tx, ty, tables) => { const c = map[ty]?.[tx]; return c === undefined || c === '#' || (c === 'D' && !open.has(dk(tx, ty))) || !!tables?.has(dk(tx, ty)); };
+function hits(map, open, x, y, tables) {
+  for (let ty = Math.floor((y - RADIUS) / TILE); ty <= Math.floor((y + RADIUS) / TILE); ty++)
+    for (let tx = Math.floor((x - RADIUS) / TILE); tx <= Math.floor((x + RADIUS) / TILE); tx++) {
+      if (!solid(map, open, tx, ty, tables)) continue;
+      const nx = Math.max(tx * TILE, Math.min(x, (tx + 1) * TILE)), ny = Math.max(ty * TILE, Math.min(y, (ty + 1) * TILE));
+      if ((x - nx) ** 2 + (y - ny) ** 2 < RADIUS * RADIUS) return true;
+    }
+  return false;
+}
+function moveCircle(map, open, x, y, dx, dy, tables) {
+  if (!hits(map, open, x + dx, y, tables)) x += dx;
+  if (!hits(map, open, x, y + dy, tables)) y += dy;
+  return { x, y };
+}
+
+/* ================= Host engine (runs inside the DM's tab) ================= */
+const clean = (s, fb) => (typeof s === 'string' && s.trim() ? s.trim().slice(0, 20) : fb);
+const colour = s => (typeof s === 'string' && /^#[0-9a-f]{6}$/i.test(s) ? s : '#4aa3ff');
+const num = n => (typeof n === 'number' && isFinite(n) ? n : 0);
+const rid = () => Math.random().toString(36).slice(2, 10);
+
+/** setInterval replacement that keeps full speed in background tabs (worker timers aren't throttled). */
+function makeTicker(fn, ms) {
+  try {
+    const url = URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),' + ms + ')'], { type: 'text/javascript' }));
+    const w = new Worker(url); w.onmessage = fn;
+    return () => { w.terminate(); URL.revokeObjectURL(url); };
+  } catch (e) { const t = setInterval(fn, ms); return () => clearInterval(t); }
+}
+
+class Host {
+  constructor(code, onLocal) {
+    this.code = code; this.onLocal = onLocal; this.map = buildMap(); this.open = new Set(); this.locked = new Set([CELL_DOOR]);
+    this.seats = new Map(SEAT0.map(([x, y, a, s]) => [dk(x, y), { x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, a, s }]));
+    this.tables = OBJ0.map(o => ({ ...o })); this.rugs = RUG0.map(o => ({ ...o })); this.tableTiles = new Set(); this.rebuildTables();
+    for (const b of this.tables) if (b.k === 'bed') this.seats.set(dk(b.x1, b.y1), { x: (b.x1 + 0.5) * TILE, y: (b.y1 + 1) * TILE, a: 0, s: 'bed' }); // lie down in the middle of the bed
+    this.bedCol = {}; // bed seat key -> colour of whoever last slept there
+    this.occ = new Map(); this.trays = {}; this.seatCol = {};            // seat key -> id of the player sitting there (max one per seat)
+    this.fire = false; this.theme = 0; this.rain = false; this.tod = 0; this.todMode = 0; this.tz = 0; this.players = new Map();
+    this.ch = new BroadcastChannel('tavern-' + code);
+    this.ch.onmessage = e => { if (e.data.k === 'c') this.receive(e.data.id, e.data.m); };
+    this.last = performance.now();
+    this.stopTick = makeTicker(() => this.step(), 33);
+  }
+  out(msg, to) { // to === undefined -> everyone (and the host's own view)
+    if (!to || to === this.hostId) this.onLocal(msg);
+    if (to !== this.hostId) this.ch.postMessage({ k: 's', to, m: msg });
+  }
+  /* ---- spawning: bedrooms (emptiest first, no player cap), DM in the corridor ---- */
+  spot(r, px, py, except) { // a free tile in rect r, nearest to (px,py)
+    const spots = [];
+    for (let y = r.y1; y <= r.y2; y++) for (let x = r.x1; x <= r.x2; x++) if (!this.objTiles.has(dk(x, y))) spots.push([x, y]);
+    spots.sort((a, b) => Math.hypot(a[0] - px, a[1] - py) - Math.hypot(b[0] - px, b[1] - py));
+    const free = s => ![...this.players.values()].some(q => q !== except && Math.hypot(q.x - (s[0] + 0.5) * TILE, q.y - (s[1] + 0.5) * TILE) < 30);
+    const s = spots.find(free) || spots[0] || [r.x1, r.y1];
+    return { x: (s[0] + 0.5) * TILE, y: (s[1] + 0.5) * TILE };
+  }
+  roomOf(p) { const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE); return BEDROOMS.findIndex(r => tx >= r.x1 && tx <= r.x2 && ty >= r.y1 && ty <= r.y2); }
+  bedSpawn(except) {
+    const cnt = BEDROOMS.map(() => 0);
+    for (const q of this.players.values()) if (q !== except) { const i = this.roomOf(q); if (i >= 0) cnt[i]++; }
+    const r = BEDROOMS[cnt.indexOf(Math.min(...cnt))];
+    return this.spot(r, r.x1 + 1, r.y1 + 2, except);
+  }
+  teleport(q, where) {
+    const pos = where === 'cell' ? this.spot(CELL, 17, 2, q) : this.bedSpawn(q);
+    q.x = pos.x; q.y = pos.y; q.dx = q.dy = 0; q.target = null;
+  }
+  addPlayer(id, role, name, color) {
+    const pos = role === 'dm' ? { x: 9.5 * TILE, y: 10.5 * TILE } : this.bedSpawn(null);
+    const p = { id, name, color, role, x: pos.x, y: pos.y, dx: 0, dy: 0, target: null, seen: performance.now() };
+    this.players.set(id, p);
+    this.out({ t: 'joined', id, code: this.code, role, map: this.map }, id);
+    return p;
+  }
+  receive(id, m) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'join') { if (!this.players.has(id)) this.addPlayer(id, 'player', clean(m.name, 'Adventurer'), colour(m.color)); return; }
+    const p = this.players.get(id); if (!p) return;
+    p.seen = performance.now();
+    const dm = p.role === 'dm';
+    switch (m.t) {
+      case 'input': p.dx = Math.sign(num(m.dx)); p.dy = Math.sign(num(m.dy)); break;
+      case 'target': p.target = { x: num(m.x), y: num(m.y) }; break;
+      case 'rename': p.name = clean(m.name, p.name); break;
+      case 'recolor': p.color = colour(m.color); break;
+      case 'leave': this.players.delete(id); break;
+      case 'talk': p.talk = !!m.on; break;
+      case 'mic': p.mic = !!m.on; break;
+      case 'rtc': if (m.to !== id && this.players.has(m.to)) this.out({ t: 'rtc', from: id, data: m.data }, m.to); break; // relay WebRTC setup
+      case 'zoomlock': { const q = dm && this.players.get(m.id); if (q && q.role !== 'dm') q.zoomLock = !q.zoomLock; break; }
+      case 'zoomall': if (dm) for (const q of this.players.values()) if (q.role !== 'dm') q.zoomLock = !!m.on; break;
+      case 'mute': case 'deafen': case 'direct': { // DM-only voice controls
+        const q = dm && this.players.get(m.id);
+        if (q && q.role !== 'dm') { const f = m.t === 'mute' ? 'muted' : m.t === 'deafen' ? 'deaf' : 'direct'; q[f] = !q[f]; }
+        break;
+      }
+      case 'door': {
+        const tx = Math.floor(num(m.x)), ty = Math.floor(num(m.y));
+        if (this.map[ty]?.[tx] !== 'D') break;
+        const k = dk(tx, ty), cx = (tx + 0.5) * TILE, cy = (ty + 0.5) * TILE;
+        if (!dm && Math.hypot(p.x - cx, p.y - cy) > DOOR_RANGE + 10) break; // players must be near
+        if (m.lock) {
+          if (!dm) break;
+          if (this.locked.has(k)) this.locked.delete(k);
+          else if (!this.occupied(tx, ty)) { this.locked.add(k); this.open.delete(k); }
+        } else if (this.locked.has(k)) break;
+        else if (this.open.has(k)) { if (!this.occupied(tx, ty)) this.open.delete(k); }
+        else this.open.add(k);
+        break;
+      }
+      case 'fire': if (dm || Math.hypot(p.x - FIRE_X, p.y - FIRE_Y) <= FIRE_RANGE + 10) this.fire = !this.fire; break;
+      case 'rain': if (dm) this.rain = !this.rain; break;
+      case 'tod': if (dm) { this.todMode = Math.max(0, Math.min(3, Math.floor(num(m.i)))); if (this.todMode < 3) this.tod = this.todMode; } break;
+      case 'tz': if (dm) this.tz = Math.max(-12, Math.min(14, this.tz + Math.sign(num(m.d)))); break;
+      case 'ghost': if (dm) { p.ghost = !p.ghost; if (!p.ghost) this.unstick(p); } break;
+      case 'theme': if (dm) this.theme = ((Math.floor(num(m.i)) % THEMES.length) + THEMES.length) % THEMES.length; break;
+      case 'jail': case 'release': { const q = dm && this.players.get(m.id); if (q && q.role !== 'dm') this.teleport(q, m.t === 'jail' ? 'cell' : 'bed'); break; }
+      case 'kick': {
+        if (!dm || m.id === id) break;
+        if (this.players.delete(m.id)) this.out({ t: 'ended', msg: 'You were removed by the DM.' }, m.id);
+        break;
+      }
+      // ---- objects: all DM-only, checked here on the host ----
+      case 'seat': { // place a chair, or rotate an existing seat by 45 degrees
+        if (!dm) break;
+        const tx = Math.floor(num(m.x)), ty = Math.floor(num(m.y)), k = dk(tx, ty);
+        if (this.map[ty]?.[tx] !== '.' || this.objTiles.has(k)) break;
+        const st = this.seats.get(k);
+        if (st) st.a = (st.a + (m.back ? -45 : 45) + 360) % 360;
+        else if (this.seats.size < MAX_SEATS) this.seats.set(k, { x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, a: 0, s: 'chair' });
+        break;
+      }
+      case 'table': {
+        if (!dm) break;
+        const x1 = Math.floor(Math.min(num(m.x1), num(m.x2))), x2 = Math.floor(Math.max(num(m.x1), num(m.x2)));
+        const y1 = Math.floor(Math.min(num(m.y1), num(m.y2))), y2 = Math.floor(Math.max(num(m.y1), num(m.y2)));
+        if (x2 - x1 >= MAX_SIDE || y2 - y1 >= MAX_SIDE || this.tables.length >= MAX_TABLES) break;
+        for (let ty = y1; ty <= y2; ty++) for (let tx = x1; tx <= x2; tx++) {
+          const k = dk(tx, ty);
+          if (this.map[ty]?.[tx] !== '.' || this.objTiles.has(k) || this.seats.has(k) || this.occupied(tx, ty)) return;
+        }
+        this.tables.push({ k: 'table', x1, y1, x2, y2 }); this.rebuildTables();
+        break;
+      }
+      case 'erase': {
+        if (!dm) break;
+        const tx = Math.floor(num(m.x)), ty = Math.floor(num(m.y)), at = o => tx >= o.x1 && tx <= o.x2 && ty >= o.y1 && ty <= o.y2;
+        let i = this.tables.findIndex(at);
+        if (i >= 0) { // removing a bed also removes its sleeping spot
+          const t = this.tables.splice(i, 1)[0]; this.rebuildTables();
+          if (t.k === 'bed') { const bk = dk(t.x1, t.y1); this.seats.delete(bk); this.occ.delete(bk); delete this.bedCol[bk]; }
+          break;
+        }
+        if (this.seats.delete(dk(tx, ty))) { this.occ.delete(dk(tx, ty)); break; }
+        i = this.rugs.findIndex(at); if (i >= 0) this.rugs.splice(i, 1);
+        break;
+      }
+    }
+  }
+  occupied(tx, ty) { // is anyone standing in this tile? (never shut a door / build on someone)
+    for (const q of this.players.values()) {
+      const nx = Math.max(tx * TILE, Math.min(q.x, (tx + 1) * TILE)), ny = Math.max(ty * TILE, Math.min(q.y, (ty + 1) * TILE));
+      if ((q.x - nx) ** 2 + (q.y - ny) ** 2 < RADIUS * RADIUS) return true;
+    }
+    return false;
+  }
+  rebuildTables() { // objTiles = anything placed; tableTiles = the ones you can't walk through (beds you can climb into)
+    this.tableTiles = new Set(); this.objTiles = new Set();
+    for (const t of this.tables) for (let y = t.y1; y <= t.y2; y++) for (let x = t.x1; x <= t.x2; x++) { this.objTiles.add(dk(x, y)); if (t.k !== 'bed') this.tableTiles.add(dk(x, y)); }
+  }
+  /* ---- seats: one sitter each; the DM can take any seat and the player is bumped out ---- */
+  nearSeat(p, now) {
+    let best = null, bd = SNAP_R;
+    for (const [k, st] of this.seats) {
+      if (p.skip && p.skip.k === k && now < p.skip.until) continue;
+      const o = this.occ.get(k);
+      if (o && o !== p.id && p.role !== 'dm') continue;      // taken by someone else
+      const d = Math.hypot(st.x - p.x, st.y - p.y);
+      if (d <= bd) { bd = d; best = st; }
+    }
+    return best;
+  }
+  evict(id, k) {
+    const q = this.players.get(id), st = this.seats.get(k); if (!q || !st) return;
+    q.skip = { k, until: performance.now() + 2500 };
+    for (const d of [44, 60, 80]) for (let i = 0; i < 8; i++) {
+      const x = st.x + Math.cos(i * Math.PI / 4) * d, y = st.y + Math.sin(i * Math.PI / 4) * d;
+      if (hits(this.map, this.open, x, y, this.tableTiles) || [...this.seats.values()].some(s => Math.hypot(s.x - x, s.y - y) <= SNAP_R)) continue;
+      q.x = x; q.y = y; q.target = null; return;
+    }
+  }
+  updateSeats() {
+    for (const [k, id] of [...this.occ]) { // sitter left, or is gone
+      const p = this.players.get(id), st = this.seats.get(k);
+      if (!p || !st || Math.hypot(p.x - st.x, p.y - st.y) > 8) this.occ.delete(k);
+    }
+    for (const p of this.players.values()) {
+      if (p.dx || p.dy || p.target) continue;
+      for (const [k, st] of this.seats) {
+        if (Math.hypot(p.x - st.x, p.y - st.y) > 3) continue;
+        const cur = this.occ.get(k);
+        if (cur === p.id) break;
+        if (!cur) this.occ.set(k, p.id);
+        else if (p.role === 'dm') { this.evict(cur, k); this.occ.set(k, p.id); }
+        break;
+      }
+    }
+    for (const [k, id] of this.occ) if (TRAY_SEATS.includes(k)) { const q = this.players.get(id); if (q) this.trays[k] = q.color; } // mat keeps the last sitter's colour
+    for (const [k, id] of this.occ) if (this.seats.get(k)?.s === 'throne') { const q = this.players.get(id); if (q) this.seatCol[k] = q.color; } // plush chairs keep the last sitter's colour
+    for (const p of this.players.values()) p.sleep = false;
+    for (const [k, id] of this.occ) if (this.seats.get(k)?.s === 'bed') { const q = this.players.get(id); if (q) { q.sleep = true; this.bedCol[k] = q.color; } } // bedroom keeps the last sleeper's colour
+  }
+  unstick(p) { // leaving wall-walk mode inside a wall: go to the nearest walkable tile
+    if (!hits(this.map, this.open, p.x, p.y, this.tableTiles)) return;
+    let best = null, bd = Infinity;
+    for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
+      if (solid(this.map, this.open, tx, ty, this.tableTiles)) continue;
+      const cx = (tx + 0.5) * TILE, cy = (ty + 0.5) * TILE, d = Math.hypot(cx - p.x, cy - p.y);
+      if (d < bd) { bd = d; best = { x: cx, y: cy }; }
+    }
+    if (best) { p.x = best.x; p.y = best.y; p.target = null; }
+  }
+  move(p, h, now) {
+    let { dx, dy } = p;
+    if (dx || dy) p.target = null;
+    else if (p.target) {
+      const tx = p.target.x - p.x, ty = p.target.y - p.y, d = Math.hypot(tx, ty);
+      if (d < 4) p.target = null; else { dx = tx / d; dy = ty / d; }
+    }
+    const len = Math.hypot(dx, dy), seat = this.nearSeat(p, now);
+    if (!len) { if (seat) { const k = Math.min(1, 10 * h); p.x += (seat.x - p.x) * k; p.y += (seat.y - p.y) * k; } return; }
+    let step = SPEED * h * (seat ? STICK : 1);
+    if (p.target) step = Math.min(step, Math.hypot(p.target.x - p.x, p.target.y - p.y));
+    const nx = p.x + dx / len * step, ny = p.y + dy / len * step;
+    if (p.ghost) { p.x = Math.max(RADIUS, Math.min(W * TILE - RADIUS, nx)); p.y = Math.max(RADIUS, Math.min(H * TILE - RADIUS, ny)); return; }
+    const r = moveCircle(this.map, this.open, p.x, p.y, nx - p.x, ny - p.y, this.tableTiles);
+    if (r.x === p.x && r.y === p.y) p.target = null;
+    p.x = r.x; p.y = r.y;
+  }
+  step() {
+    const now = performance.now(); let rem = Math.min(1, (now - this.last) / 1000); this.last = now;
+    for (const [id, p] of this.players) if (p.role !== 'dm' && now - p.seen > 15000) this.players.delete(id); // vanished tab
+    while (rem > 1e-4) { const h = Math.min(rem, 1 / 30); rem -= h; for (const p of this.players.values()) this.move(p, h, now); }
+    this.updateSeats();
+    if (this.todMode === 3) this.tod = phaseAt(clockAt(this.tz).h);
+    this.out({ t: 'state', open: [...this.open], locked: [...this.locked], seats: [...this.seats].map(([k, s]) => [k, s.a, s.s]),
+      tables: this.tables, rugs: this.rugs, fire: this.fire, theme: this.theme, trays: this.trays, seatCol: this.seatCol, bedCol: this.bedCol, rain: this.rain, tod: this.tod, todMode: this.todMode, tz: this.tz,
+      players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep })) });
+  }
+  close() {
+    this.stopTick();
+    this.ch.postMessage({ k: 's', m: { t: 'ended', msg: 'The DM left; session closed.' } });
+    this.ch.close();
+  }
+}
+
+/* ================= Ambient sound: fireplace + rain (generated; each listener sets their own volumes) ================= */
+let ac = null, master = null, fireGain = null, rainGain = null, muted = false, fireVol = 0, rainVol = 0;
+function noiseBuffer(sec, brown) {
+  const len = ac.sampleRate * sec, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); let last = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w * 0.5; }
+  return buf;
+}
+function loop(buf, ...nodes) { const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; let n = src; for (const x of nodes) { n.connect(x); n = x; } src.start(); return n; }
+function initAudio() {
+  if (ac) { ac.resume?.(); return; }
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.connect(ac.destination);
+    // fireplace: low warm rumble + ember crackles
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
+    fireGain = ac.createGain(); fireGain.gain.value = 0;
+    loop(noiseBuffer(3, true), lp, fireGain).connect(master);
+    // rain on the roof: soft filtered hiss + low patter, heard from indoors
+    const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500;
+    const rl = ac.createBiquadFilter(); rl.type = 'lowpass'; rl.frequency.value = 2600;
+    rainGain = ac.createGain(); rainGain.gain.value = 0; rainGain.connect(master);
+    loop(noiseBuffer(2, false), hp, rl).connect(rainGain);
+    const low = ac.createGain(); low.gain.value = 0.5; loop(noiseBuffer(3, true), low).connect(rainGain);
+    makeTicker(() => {
+      if (fireVol > 0 && Math.random() < 0.4) tick(900 + Math.random() * 2200, 1.1, 0.03, fireVol * (0.15 + Math.random() * 0.5));
+      if (rainVol > 0) for (let i = 0; i < 3; i++) if (Math.random() < 0.6) tick(2500 + Math.random() * 3500, 3, 0.012, rainVol * (0.2 + Math.random() * 0.5));
+    }, 130);
+  } catch (e) { ac = null; }
+}
+function tick(freq, q, sec, vol) { // one short filtered click: an ember pop or a raindrop
+  const n = Math.max(1, Math.floor(ac.sampleRate * sec)), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  const s = ac.createBufferSource(); s.buffer = b;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q;
+  const g = ac.createGain(); g.gain.value = vol;
+  s.connect(bp); bp.connect(g); g.connect(master); s.start();
+}
+/* Personal volume settings (this viewer only; remembered in this browser when possible). */
+const store = { get(k, d) { try { const v = localStorage.getItem('tavern:' + k); return v === null ? d : +v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('tavern:' + k, v); } catch (e) {} } };
+let fireSlider = store.get('fire', 100) / 100, rainSlider = store.get('rain', 100) / 100;
+const personVol = new Map(); // player id -> 0..2
+const volOf = p => { if (!personVol.has(p.id)) personVol.set(p.id, store.get('vol:' + p.name, 100) / 100); return personVol.get(p.id); };
+function updateAmbience() { // runs on every state update, so it keeps working in background tabs
+  const me = players.find(p => p.id === myId);
+  fireVol = fire && me && !muted ? (0.05 + 0.3 * Math.max(0, 1 - Math.hypot(me.x - FIRE_X, me.y - FIRE_Y) / 360)) * fireSlider : 0;
+  rainVol = rain && me && !muted ? 0.22 * rainSlider : 0;
+  if (!ac) return;
+  fireGain.gain.setTargetAtTime(fireVol * 0.9, ac.currentTime, 0.25);
+  rainGain.gain.setTargetAtTime(rainVol, ac.currentTime, 0.4);
+  master.gain.setTargetAtTime(muted ? 0 : 1, ac.currentTime, 0.05);
+}
+
+/* ================= Client ================= */
+const $ = id => document.getElementById(id);
+const canvas = $('canvas'), ctx = canvas.getContext('2d');
+let stopPing = () => {}, host = null, ch = null, myId = '', role = 'player', map = [], ring = [], players = [], open = new Set(), locked = new Set();
+let seats = new Map(), tables = [], rugs = [], fire = false, theme = 0, trays = {}, seatCol = {}, bedCol = {}, rain = false, tod = 0, todMode = 0, tz = 0, tool = '', lastState = 0, joinTimer = 0, drag = null;
+const shown = new Map();
+const identity = () => ({ name: $('name').value, color: $('color').value });
+const showError = m => { $('error').textContent = m; };
+
+function send(m) { if (host) host.receive(myId, m); else ch?.postMessage({ k: 'c', id: myId, m }); }
+const inCell = p => { const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE); return tx >= CELL.x1 && tx <= CELL.x2 && ty >= CELL.y1 && ty <= CELL.y2; };
+
+function onServer(m) {
+  if (m.t === 'joined') {
+    clearTimeout(joinTimer);
+    myId = m.id; role = m.role; map = m.map; lastState = performance.now();
+    ring = map.map((row, y) => [...row].map((c, x) => c === '#' && [-1, 0, 1].some(dy => [-1, 0, 1].some(dx => (map[y + dy]?.[x + dx] ?? '#') !== '#'))));
+    $('sesCode').textContent = m.code; $('roleTag').textContent = role === 'dm' ? 'Dungeon Master' : 'Player';
+    $('dmPanel').hidden = role !== 'dm'; $('ambDm').hidden = role !== 'dm'; $('lobby').hidden = true; $('game').hidden = false;
+    $('rename').value = $('name').value; $('recolor').value = $('color').value;
+    resize(); initAudio(); buildRegions(); syncMicBtn(); cam = FULL(); lastRoom = -1; myZoom = false;
+    stopPing = makeTicker(() => send({ t: 'ping' }), 1000);
+  } else if (m.t === 'state') {
+    players = m.players; open = new Set(m.open); locked = new Set(m.locked); lastState = performance.now();
+    seats = new Map(m.seats.map(([k, a, s]) => [k, { a, s }])); tables = m.tables; rugs = m.rugs; fire = m.fire; theme = m.theme; rain = m.rain; tod = m.tod; trays = m.trays; bedCol = m.bedCol; seatCol = m.seatCol; todMode = m.todMode; tz = m.tz;
+    syncVoice(); updateAmbience(); renderVolumes();
+    syncZoomBtn();
+    let when = TOD[tod];
+    if (todMode === 3) { const c = clockAt(tz); when = String(c.h).padStart(2, '0') + ':' + String(c.m).padStart(2, '0') + ' ' + tzLabel(tz) + ' · ' + when; }
+    $('ambSum').textContent = [when, rain && 'Rain', fire && 'Fire'].filter(Boolean).join(' · ');
+    if (role === 'dm') {
+      renderList();
+      $('ghostBtn').textContent = 'Walk through walls: ' + (players.find(p => p.id === myId)?.ghost ? 'On' : 'Off');
+      $('fireBtn').textContent = 'Fireplace: ' + (fire ? 'On' : 'Off');
+      $('cellBtn').textContent = 'Cell door: ' + (locked.has(CELL_DOOR) ? 'Locked' : 'Unlocked');
+      [...$('themes').children].forEach((b, i) => b.classList.toggle('active', i === theme));
+      $('rainBtn').textContent = 'Rain: ' + (rain ? 'On' : 'Off'); $('rainBtn').classList.toggle('active', rain); $('fireBtn').classList.toggle('active', fire);
+      [...$('todBtns').children].forEach((b, i) => b.classList.toggle('active', i === todMode));
+      $('tzRow').hidden = todMode !== 3; $('tzLbl').textContent = tzLabel(tz);
+    }
+  } else if (m.t === 'rtc') onRtc(m.from, m.data);
+  else if (m.t === 'error') { clearTimeout(joinTimer); showError(m.msg); }
+  else if (m.t === 'ended') leave(m.msg, false);
+}
+
+function start(creating) {
+  showError(''); leave('', false); initAudio();
+  const id = rid();
+  if (creating) {
+    const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const code = Array.from({ length: 4 }, () => A[Math.floor(Math.random() * A.length)]).join('');
+    host = new Host(code, onServer); host.hostId = id; myId = id;
+    const { name, color } = identity();
+    host.addPlayer(id, 'dm', clean(name, 'Dungeon Master'), colour(color));
+  } else {
+    const code = $('code').value.trim().toUpperCase();
+    if (code.length !== 4) return showError('Enter the 4-letter session code.');
+    myId = id; ch = new BroadcastChannel('tavern-' + code);
+    ch.onmessage = e => { if (e.data.k === 's' && (!e.data.to || e.data.to === myId)) onServer(e.data.m); };
+    send({ t: 'join', ...identity() });
+    joinTimer = setTimeout(() => { showError('Session not found (open it in another tab of this browser).'); ch?.close(); ch = null; }, 1500);
+  }
+}
+
+function leave(msg, notify = true) {
+  clearTimeout(joinTimer); stopPing(); stopPing = () => {};
+  if (host) { host.close(); host = null; }
+  else if (ch) { if (notify) send({ t: 'leave' }); ch.close(); ch = null; }
+  stopVoice();
+  tool = ''; drag = null; syncTools(); fire = false; rain = false; fireVol = rainVol = 0; if (fireGain) { fireGain.gain.value = 0; rainGain.gain.value = 0; }
+  volSig = ''; $('vlist').replaceChildren();
+  players = []; map = []; shown.clear(); myId = ''; listSig = '';
+  document.body.classList.remove('ui-hidden'); $('hideBtn').textContent = 'Hide UI';
+  $('game').hidden = true; $('lobby').hidden = false; if (msg) showError(msg);
+}
+addEventListener('pagehide', () => { if (host || ch) leave('', true); });
+makeTicker(() => { if (ch && map.length && performance.now() - lastState > 10000) leave('Lost connection to the DM tab.', false); }, 1000);
+
+let listSig = '';
+function renderList() {
+  const sig = players.map(p => [p.id, p.name, p.color, inCell(p), p.muted, p.deaf, p.direct, p.mic, p.zoomLock].join()).join('|');
+  if (sig !== listSig) {
+    listSig = sig;
+    const ul = $('plist'); ul.replaceChildren();
+    for (const p of players) {
+      const li = document.createElement('li'); li.dataset.id = p.id;
+      li.innerHTML = '<span class="dot"></span><span class="nm"></span>';
+      li.firstChild.style.background = p.color;
+      li.lastChild.textContent = p.name + (p.id === myId ? ' (you)' : '') + (p.mic ? '' : ' · no mic');
+      if (p.id !== myId) {
+        const row = document.createElement('div'); row.className = 'btns';
+        const btn = (label, cls, on, title, fn) => { const b = document.createElement('button'); b.textContent = label; b.className = cls + (on ? ' on' : ''); b.title = title; b.onclick = fn; row.append(b); };
+        const jailed = inCell(p);
+        btn(p.muted ? 'Unmute' : 'Mute', 'v-mute', p.muted, 'Muted: nobody in the room can hear them (a direct line still works)', () => send({ t: 'mute', id: p.id }));
+        btn(p.deaf ? 'Undeafen' : 'Deafen', 'v-deaf', p.deaf, 'Deafened: they cannot hear anyone (a direct line still works)', () => send({ t: 'deafen', id: p.id }));
+        btn('Direct', 'v-direct', p.direct, 'Private two-way line between you and this player, from anywhere on the map', () => send({ t: 'direct', id: p.id }));
+        btn(jailed ? 'Release' : 'Dungeon', jailed ? 'rel' : 'jail', false, jailed ? 'Send back to a bedroom' : 'Send to the cell', () => send({ t: jailed ? 'release' : 'jail', id: p.id }));
+        btn('Room view', 'v-zoom', p.zoomLock, p.zoomLock ? 'Room view forced on: click to give them back control' : 'Force room view on for this player', () => send({ t: 'zoomlock', id: p.id }));
+        btn('Kick', 'kick', false, 'Remove from the session', () => send({ t: 'kick', id: p.id }));
+        li.append(row);
+      }
+      ul.append(li);
+    }
+  }
+  for (const li of $('plist').children) { // talking glow on the list dots, updated in place so clicks are never lost
+    const p = players.find(q => q.id === li.dataset.id);
+    li.firstChild.style.boxShadow = p?.talk ? '0 0 0 3px rgba(80,230,120,.85)' : 'none';
+  }
+}
+
+/* ================= Voice chat (WebRTC between every pair; the host relays the setup messages) ================= */
+const RTC_CFG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+let micStream = null, micOn = true, micAn = null, talking = false, talkHold = 0, stopTalkTick = () => {}, regions = [];
+const peers = new Map(); // player id -> { pc, sender, gain, el, stream, pend, sending, vol, t0 }
+
+function buildRegions() { // number each room: floor tiles joined without passing through a wall or door
+  regions = map.map(r => [...r].map(() => -1)); let n = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (map[y][x] !== '.' || regions[y][x] >= 0) continue;
+    const st = [[x, y]]; regions[y][x] = n;
+    while (st.length) {
+      const [cx, cy] = st.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (map[ny]?.[nx] === '.' && regions[ny][nx] < 0) { regions[ny][nx] = n; st.push([nx, ny]); }
+      }
+    }
+    n++;
+  }
+  const bb = Array.from({ length: n }, () => [W, H, -1, -1]);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = regions[y][x]; if (r < 0) continue; const b = bb[r]; b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y); }
+  roomMask = bb.map(() => new Set()); // each room's floor plus the walls, doors and windows touching it
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = regions[y][x]; if (r < 0) continue; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) roomMask[r].add(dk(x + dx, y + dy)); }
+  roomBox = bb.map(([x1, y1, x2, y2]) => ({ x: (x1 - 1) * TILE - 6, y: (y1 - 1) * TILE - 6, w: (x2 - x1 + 3) * TILE + 12, h: (y2 - y1 + 3) * TILE + 12 }));
+}
+function roomsAt(p) { // standing in a doorway counts as being in both rooms it joins
+  const tx = Math.floor(p.x / TILE), ty = Math.floor(p.y / TILE), c = map[ty]?.[tx];
+  if (c === '.') return [regions[ty][tx]];
+  if (c === 'D') return [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => regions[ty + dy]?.[tx + dx]).filter(r => r >= 0);
+  return [];
+}
+const sameRoom = (a, b) => { const ra = roomsAt(a); return roomsAt(b).some(r => ra.includes(r)); };
+/** How loud listener L hears speaker S (0 = not at all). Every client works this out from the same shared state. */
+function hearing(L, S) {
+  if (!L || !S || L.id === S.id) return 0;
+  if ((L.role === 'dm' && S.direct) || (S.role === 'dm' && L.direct)) return 1;   // DM direct line: anywhere, ignores mute/deafen
+  if (L.deaf || S.muted) return 0;
+  if (S.role === 'dm' && players.some(p => p.direct)) return 0;                  // while a direct line is open the DM speaks privately
+  if (!sameRoom(L, S)) return 0;                                                   // different rooms can't hear each other
+  return Math.max(0.35, Math.min(1, 1 - (Math.hypot(L.x - S.x, L.y - S.y) - 120) / 600)); // softer across a big room
+}
+
+async function connectMic() {
+  initAudio();
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) {
+    $('micBtn').textContent = 'Mic blocked'; $('micBtn').title = 'Microphone permission was refused or no microphone was found (' + e.name + '). Click to try again.';
+    return;
+  }
+  if (!myId) { micStream.getTracks().forEach(t => t.stop()); micStream = null; return; }
+  micOn = true;
+  if (ac) { micAn = ac.createAnalyser(); micAn.fftSize = 512; ac.createMediaStreamSource(micStream).connect(micAn); }
+  stopTalkTick = makeTicker(updateTalk, 50);
+  for (const pr of peers.values()) pr.sending = undefined;   // re-route with the new microphone
+  send({ t: 'mic', on: true }); syncMicBtn(); syncVoice();
+}
+function updateTalk() { // speaking detection on my own mic, sent to everyone so tokens can glow
+  if (!micAn) return;
+  const d = new Float32Array(micAn.fftSize); micAn.getFloatTimeDomainData(d);
+  let sum = 0; for (const v of d) sum += v * v;
+  const now = performance.now();
+  if (micOn && Math.sqrt(sum / d.length) > 0.02) talkHold = now + 350;
+  const t = now < talkHold;
+  if (t !== talking) { talking = t; send({ t: 'talk', on: t }); }
+}
+function syncMicBtn() {
+  const b = $('micBtn'); b.title = '';
+  b.textContent = !micStream ? 'Connect mic' : micOn ? 'Mic: On' : 'Mic: Off';
+  b.classList.toggle('off', !!micStream && !micOn);
+}
+$('micBtn').onclick = () => {
+  if (!micStream) return connectMic();
+  micOn = !micOn; micStream.getAudioTracks().forEach(t => t.enabled = micOn); syncMicBtn();
+};
+function stopVoice() {
+  for (const id of [...peers.keys()]) dropPeer(id);
+  stopTalkTick(); stopTalkTick = () => {};
+  micStream?.getTracks().forEach(t => t.stop()); micStream = null; micAn = null; talking = false; syncMicBtn();
+}
+
+function makePeer(id) {
+  const pc = new RTCPeerConnection(RTC_CFG), pr = { pc, sender: null, gain: null, el: null, stream: null, pend: [], sending: undefined, vol: 0, t0: performance.now() };
+  peers.set(id, pr);
+  pc.onicecandidate = e => { if (e.candidate) send({ t: 'rtc', to: id, data: { ice: e.candidate.toJSON() } }); };
+  pc.ontrack = e => {
+    const stream = e.streams[0] || new MediaStream([e.track]); pr.stream = stream;
+    pr.el = new Audio(); pr.el.srcObject = stream; pr.el.muted = true; pr.el.play().catch(() => {}); // Chrome only feeds remote audio to WebAudio if it's also attached to an element
+    if (ac) { pr.gain = ac.createGain(); pr.gain.gain.value = 0; pr.vol = 0; ac.createMediaStreamSource(stream).connect(pr.gain).connect(master); }
+  };
+  return pr;
+}
+function dropPeer(id) {
+  const pr = peers.get(id); if (!pr) return;
+  pr.pc.close(); if (pr.el) pr.el.srcObject = null; pr.gain?.disconnect(); peers.delete(id);
+}
+async function callPeer(id) { // the player with the smaller id starts each connection, so two never collide
+  const pr = makePeer(id), tr = pr.pc.addTransceiver('audio', { direction: 'sendrecv' }); pr.sender = tr.sender;
+  try { await pr.pc.setLocalDescription(await pr.pc.createOffer()); send({ t: 'rtc', to: id, data: { sdp: pr.pc.localDescription.toJSON() } }); }
+  catch (e) { console.warn('voice', e); }
+}
+async function onRtc(from, data) {
+  if (!data || typeof data !== 'object') return;
+  let pr = peers.get(from);
+  try {
+    if (data.sdp?.type === 'offer') {
+      if (pr) dropPeer(from);
+      pr = makePeer(from);
+      await pr.pc.setRemoteDescription(data.sdp);
+      const tr = pr.pc.getTransceivers()[0]; tr.direction = 'sendrecv'; pr.sender = tr.sender;
+      await pr.pc.setLocalDescription(await pr.pc.createAnswer());
+      send({ t: 'rtc', to: from, data: { sdp: pr.pc.localDescription.toJSON() } });
+    } else if (data.sdp?.type === 'answer' && pr) await pr.pc.setRemoteDescription(data.sdp);
+    else if (data.ice && pr) { if (pr.pc.remoteDescription) await pr.pc.addIceCandidate(data.ice).catch(() => {}); else pr.pend.push(data.ice); }
+    if (pr?.pc.remoteDescription) for (const c of pr.pend.splice(0)) await pr.pc.addIceCandidate(c).catch(() => {});
+    syncVoice();
+  } catch (e) { console.warn('voice', e); }
+}
+function syncVoice() { // called on every state update: keep connections up and route sound by the rules above
+  if (!myId || !map.length) return;
+  const ids = new Set(players.map(p => p.id)), now = performance.now();
+  for (const id of [...peers.keys()]) if (!ids.has(id)) dropPeer(id);
+  for (const id of ids) {
+    if (id === myId || myId > id) continue;
+    const pr = peers.get(id), st = pr?.pc.connectionState;
+    if (!pr || st === 'failed' || (!pr.pc.remoteDescription && now - pr.t0 > 6000)) { dropPeer(id); callPeer(id); }
+  }
+  const me = players.find(p => p.id === myId); if (!me) return;
+  const track = micStream?.getAudioTracks()[0] || null;
+  for (const [id, pr] of peers) {
+    const them = players.find(p => p.id === id); if (!them) continue;
+    const out = hearing(them, me) > 0 ? track : null;   // my voice is only sent to people allowed to hear it
+    if (pr.sender && pr.sending !== out) { pr.sending = out; pr.sender.replaceTrack(out).catch(() => {}); }
+    const v = hearing(me, them) * volOf(them);
+    if (pr.gain && Math.abs(v - pr.vol) > 0.01) { pr.vol = v; pr.gain.gain.setTargetAtTime(v, ac.currentTime, 0.08); }
+  }
+}
+
+/* ---- input ---- */
+const KEYS = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1], a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] };
+const held = new Set();
+const emitDir = () => { let dx = 0, dy = 0; for (const k of held) { dx += KEYS[k][0]; dy += KEYS[k][1]; } send({ t: 'input', dx: Math.sign(dx), dy: Math.sign(dy) }); };
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (!(k in KEYS) || e.target.tagName === 'INPUT' || !map.length) return;
+  e.preventDefault(); if (!held.has(k)) { held.add(k); emitDir(); }
+});
+addEventListener('keyup', e => { if (held.delete(e.key.toLowerCase())) emitDir(); });
+addEventListener('blur', () => { held.clear(); if (map.length) emitDir(); });
+
+/* ---- camera: whole map, or zoomed to the room you're in ---- */
+const FULL = () => ({ x: 0, y: 0, w: W * TILE, h: H * TILE });
+let cam = FULL(), myZoom = false, lastRoom = -1, roomBox = [], roomMask = [];
+const zoomOn = () => { const me = players.find(p => p.id === myId); return !!(me && (me.zoomLock || myZoom)); };
+function myRoom() { // the room you're in; in a doorway or a wall you stay with the room you were last in
+  const me = players.find(p => p.id === myId); if (!me || !regions.length) return lastRoom;
+  const rs = roomsAt(me);
+  if (rs.length && !rs.includes(lastRoom)) lastRoom = rs.length === 1 ? rs[0] : lastRoom < 0 ? rs[0] : lastRoom;
+  return lastRoom;
+}
+function camTarget() { const r = myRoom(); return zoomOn() && roomBox[r] ? roomBox[r] : FULL(); }
+let dpr = 1; const CW = () => canvas.width / dpr, CH = () => canvas.height / dpr;
+const view = () => { const s = Math.min(CW() / cam.w, CH() / cam.h); return { s, ox: (CW() - cam.w * s) / 2 - cam.x * s, oy: (CH() - cam.h * s) / 2 - cam.y * s }; };
+function syncZoomBtn() {
+  const me = players.find(p => p.id === myId), locked = !!me?.zoomLock, b = $('zoomBtn');
+  b.textContent = locked ? 'Room view (set by DM)' : myZoom ? 'Room view: On' : 'Room view: Off';
+  b.disabled = locked; b.classList.toggle('on', zoomOn());
+}
+$('zoomBtn').onclick = () => { myZoom = !myZoom; syncZoomBtn(); };
+function resize() { dpr = Math.min(window.devicePixelRatio || 1, 2.5); canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr); }
+addEventListener('resize', resize);
+const tileAt = e => {
+  const r = canvas.getBoundingClientRect(), v = view();
+  const x = (e.clientX - r.left - v.ox) / v.s, y = (e.clientY - r.top - v.oy) / v.s;
+  return { x, y, tx: Math.floor(x / TILE), ty: Math.floor(y / TILE) };
+};
+let press = null; // a DM's touch on a door, waiting to see if it's a tap or a hold
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('pointerdown', e => {
+  ac?.resume?.();
+  const { x, y, tx, ty } = tileAt(e), me = players.find(p => p.id === myId);
+  if (role === 'dm' && tool) { // DM object tools
+    if (tool === 'chair') send({ t: 'seat', x: tx, y: ty, back: e.shiftKey || e.button === 2 });
+    else if (tool === 'erase') send({ t: 'erase', x: tx, y: ty });
+    else if (tool === 'table') { drag = { a: [tx, ty], b: [tx, ty] }; canvas.setPointerCapture(e.pointerId); }
+    return;
+  }
+  if (ty === 0 && tx >= 11 && tx <= 13 && (role === 'dm' || (me && Math.hypot(me.x - FIRE_X, me.y - FIRE_Y) <= FIRE_RANGE))) return send({ t: 'fire' });
+  const bed = tables.find(t => t.k === 'bed' && tx >= t.x1 && tx <= t.x2 && ty >= t.y1 && ty <= t.y2);
+  if (bed) return send({ t: 'target', x: (bed.x1 + 0.5) * TILE, y: (bed.y1 + 1) * TILE });                // click a bed = go to sleep
+  if (seats.has(dk(tx, ty))) return send({ t: 'target', x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE }); // click a seat = go sit
+  if (map[ty]?.[tx] === 'D') {
+    if (role === 'dm') {
+      if (e.pointerType !== 'touch') return send({ t: 'door', x: tx, y: ty, lock: e.shiftKey || e.button === 2 });
+      press = { tx, ty, timer: setTimeout(() => { send({ t: 'door', x: tx, y: ty, lock: true }); navigator.vibrate?.(30); press = null; }, 480) }; // hold = lock / unlock
+      return;
+    }
+    if (me && Math.hypot(me.x - (tx + 0.5) * TILE, me.y - (ty + 0.5) * TILE) <= DOOR_RANGE) return send({ t: 'door', x: tx, y: ty });
+  }
+  send({ t: 'target', x, y });
+});
+canvas.addEventListener('pointermove', e => { if (drag) { const t = tileAt(e); drag.b = [t.tx, t.ty]; } });
+canvas.addEventListener('pointerup', () => {
+  if (press) { clearTimeout(press.timer); send({ t: 'door', x: press.tx, y: press.ty }); press = null; } // short tap on a door = open / close
+  if (!drag) return; const { a, b } = drag; drag = null; send({ t: 'table', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); });
+canvas.addEventListener('pointercancel', () => { drag = null; if (press) { clearTimeout(press.timer); press = null; } });
+
+const HINTS = { '': 'Pick a tool to place or remove objects.', chair: 'Click a floor tile to place a chair. Click any chair/sofa to rotate 45° (Shift or right-click: other way).', table: 'Click and drag across floor tiles to size a table.', erase: 'Click a chair, table, bed, shelf or rug to remove it.' };
+function syncTools() {
+  for (const n of ['chair', 'table', 'erase']) $('tool-' + n).classList.toggle('active', tool === n);
+  canvas.style.cursor = tool ? 'crosshair' : ''; $('toolHint').textContent = HINTS[tool];
+}
+for (const n of ['chair', 'table', 'erase']) $('tool-' + n).onclick = () => { tool = tool === n ? '' : n; drag = null; syncTools(); };
+$('ghostBtn').onclick = () => send({ t: 'ghost' });
+/* ---- phones and tablets ---- */
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+document.body.classList.toggle('touch', isTouch);
+$('panelBtn').onclick = () => { document.body.classList.toggle('panel-open'); };
+canvas.addEventListener('pointerdown', () => document.body.classList.remove('panel-open'), true);   // tapping the map tucks the panel away
+(function joystick() {
+  const base = $('stick'), knob = base.firstElementChild; let id = null, last = '0,0';
+  const set = (dx, dy) => { const k = dx + ',' + dy; if (k !== last) { last = k; send({ t: 'input', dx, dy }); } };
+  const move = e => {
+    const r = base.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2;
+    let x = e.clientX - cx, y = e.clientY - cy; const d = Math.hypot(x, y);
+    if (d > R) { x *= R / d; y *= R / d; }
+    knob.style.transform = `translate(${x}px, ${y}px)`;
+    if (d < R * 0.25) return set(0, 0);
+    const a = Math.atan2(y, x), oct = Math.round(a / (Math.PI / 4));                  // 8 directions
+    set(Math.round(Math.cos(oct * Math.PI / 4)), Math.round(Math.sin(oct * Math.PI / 4)));
+  };
+  base.addEventListener('pointerdown', e => { id = e.pointerId; base.setPointerCapture(id); base.classList.add('on'); move(e); });
+  base.addEventListener('pointermove', e => { if (e.pointerId === id) move(e); });
+  const end = e => { if (e.pointerId !== id) return; id = null; knob.style.transform = ''; base.classList.remove('on'); set(0, 0); };
+  base.addEventListener('pointerup', end); base.addEventListener('pointercancel', end);
+})();
+function setUiHidden(h) { document.body.classList.toggle('ui-hidden', h); $('hideBtn').textContent = h ? 'Show UI' : 'Hide UI'; resize(); }
+$('hideBtn').onclick = () => setUiHidden(!document.body.classList.contains('ui-hidden'));
+addEventListener('keydown', e => { if (e.key.toLowerCase() === 'h' && map.length && !['INPUT', 'TEXTAREA'].includes(e.target.tagName) && !e.ctrlKey && !e.metaKey && !e.altKey) setUiHidden(!document.body.classList.contains('ui-hidden')); });
+for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => {
+  for (const o of document.querySelectorAll('.tabs button')) o.classList.toggle('active', o === b);
+  $('tab-ctl').hidden = b.dataset.tab !== 'ctl'; $('tab-ply').hidden = b.dataset.tab !== 'ply';
+};
+$('zoomAllOn').onclick = () => send({ t: 'zoomall', on: true });
+$('zoomAllOff').onclick = () => send({ t: 'zoomall', on: false });
+$('fireBtn').onclick = () => send({ t: 'fire' });
+$('cellBtn').onclick = () => send({ t: 'door', x: 17, y: 3, lock: true });
+$('recolor').onchange = () => send({ t: 'recolor', color: $('recolor').value });
+$('mute').onclick = () => { muted = !muted; $('mute').textContent = 'Sound: ' + (muted ? 'Off' : 'On'); updateAmbience(); };
+$('rainBtn').onclick = () => send({ t: 'rain' });
+$('tzDown').onclick = () => send({ t: 'tz', d: -1 }); $('tzUp').onclick = () => send({ t: 'tz', d: 1 });
+function setAmbFolded(f) {
+  $('amb').classList.toggle('folded', f); $('ambArrow').textContent = f ? '▴' : '▾';
+  $('ambHead').setAttribute('aria-expanded', String(!f)); store.set('ambOpen', f ? 0 : 1);
+}
+$('ambHead').onclick = () => setAmbFolded(!$('amb').classList.contains('folded'));
+setAmbFolded(!store.get('ambOpen', 0));
+[...TOD, 'Real time'].forEach((n, i) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => send({ t: 'tod', i }); $('todBtns').append(b); });
+/* ---- sound panel (every viewer has their own) ---- */
+function bindSlider(input, init, onSet) {
+  const out = input.nextElementSibling;
+  input.value = Math.round(init * 100); out.textContent = input.value + '%';
+  input.oninput = () => { out.textContent = input.value + '%'; onSet(input.value / 100); };
+}
+bindSlider($('volFire'), fireSlider, v => { fireSlider = v; store.set('fire', v * 100); updateAmbience(); });
+bindSlider($('volRain'), rainSlider, v => { rainSlider = v; store.set('rain', v * 100); updateAmbience(); });
+let volSig = '';
+function renderVolumes() { // one slider per other person; only rebuilt when the people change, so dragging is never interrupted
+  const others = players.filter(p => p.id !== myId), sig = others.map(p => p.id + p.name + p.color).join('|');
+  if (sig === volSig) return; volSig = sig;
+  const box = $('vlist'); box.replaceChildren();
+  if (!others.length) { box.innerHTML = '<p>Nobody else is here yet.</p>'; return; }
+  for (const p of others) {
+    const row = document.createElement('label'); row.className = 'sl';
+    row.innerHTML = '<span class="who"><span class="dot"></span><span></span></span><input type="range" min="0" max="200" step="5"><output></output>';
+    row.querySelector('.dot').style.background = p.color; row.querySelector('.who span:last-child').textContent = p.name + (p.role === 'dm' ? ' (DM)' : '');
+    bindSlider(row.querySelector('input'), volOf(p), v => { personVol.set(p.id, v); store.set('vol:' + p.name, v * 100); syncVoice(); });
+    box.append(row);
+  }
+}
+THEMES.forEach((t, i) => {
+  const b = document.createElement('button'); b.textContent = t.n; b.title = 'Colour theme: ' + t.n;
+  b.style.background = `linear-gradient(135deg, ${t.wall} 0 33%, ${t.f1} 33% 66%, ${t.door} 66%)`; b.style.borderColor = t.bg;
+  b.onclick = () => send({ t: 'theme', i }); $('themes').append(b);
+});
+syncTools();
+
+const SWATCHES = ['#e03131', '#f76707', '#f59f00', '#82c91e', '#2f9e44', '#12b886', '#15aabf', '#4aa3ff', '#4263eb', '#7950f2', '#d6336c', '#e8e8e8'];
+function syncSwatches() { for (const b of $('swatches').children) b.classList.toggle('sel', b.dataset.c === $('color').value.toLowerCase()); }
+for (const c of SWATCHES) {
+  const b = document.createElement('button'); b.className = 'sw'; b.dataset.c = c; b.title = c; b.style.background = c;
+  b.onclick = () => { $('color').value = c; syncSwatches(); }; $('swatches').append(b);
+}
+$('color').oninput = syncSwatches;
+$('color').value = SWATCHES[Math.floor(Math.random() * SWATCHES.length)]; syncSwatches();
+
+$('create').onclick = () => start(true);
+$('join').onclick = () => start(false);
+$('renameBtn').onclick = () => send({ t: 'rename', name: $('rename').value });
+$('leave').onclick = () => leave('');
+
+/* ---- render ---- */
+const hsh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+const ST_SCALE = 3; let staticCv = null, staticKey = '';
+function shade(c, v) { return v >= 0 ? mix(c, '#ffffff', v) : mix(c, '#000000', -v); }
+function woodTile(g, base, X, Y) { // planks run left-right and carry on across tiles
+  const PL = 92;
+  for (let i = 0; i < 5; i++) {
+    const R = Y / 8 + i, ry = Y + i * 8, off = hsh(R, 1.7) * PL;
+    let sx = X;
+    while (sx < X + TILE) {
+      const id = Math.floor((sx + off) / PL), ex = Math.min(X + TILE, (id + 1) * PL - off);
+      g.fillStyle = shade(base, (hsh(R, id) - 0.5) * 0.22); g.fillRect(sx, ry, ex - sx, 8);
+      g.fillStyle = shade(base, 0.08 + hsh(id, R) * 0.06); g.globalAlpha = 0.35; g.fillRect(sx, ry + 2 + hsh(R * 3, id) * 4, ex - sx, 0.6); g.globalAlpha = 1; // grain
+      if (hsh(id * 3.1, R) < 0.05) { const kx = sx + (ex - sx) * 0.5; if (kx < ex - 3) { g.fillStyle = shade(base, -0.3); g.beginPath(); g.ellipse(kx, ry + 4, 2.2, 1.3, 0, 0, Math.PI * 2); g.fill(); } }
+      if (ex < X + TILE) { g.fillStyle = shade(base, -0.45); g.fillRect(ex - 0.4, ry, 0.8, 8); }
+      sx = ex;
+    }
+    g.fillStyle = shade(base, -0.5); g.fillRect(X, ry + 7.3, TILE, 0.7);
+  }
+}
+function carpetTile(g, base, X, Y) {
+  g.fillStyle = base; g.fillRect(X, Y, TILE, TILE);
+  g.save(); g.beginPath(); g.rect(X, Y, TILE, TILE); g.clip();
+  g.strokeStyle = shade(base, 0.12); g.lineWidth = 0.7; g.globalAlpha = 0.55; g.beginPath();
+  for (let k = -TILE; k < TILE * 2; k += 10) { g.moveTo(X + k, Y); g.lineTo(X + k + TILE, Y + TILE); g.moveTo(X + k + TILE, Y); g.lineTo(X + k, Y + TILE); }
+  g.stroke(); g.restore();
+  g.globalAlpha = 1; g.lineWidth = 1;
+  for (let i = 0; i < 18; i++) { g.fillStyle = shade(base, hsh(X + i, Y) > 0.5 ? 0.1 : -0.15); g.fillRect(X + hsh(i, X + Y) * TILE, Y + hsh(Y, i * 7) * TILE, 1, 1); } // pile
+}
+function stoneTile(g, base, X, Y, tx, ty) {
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+    const x = X + i * 20, y = Y + j * 20; g.fillStyle = shade(base, (hsh(tx * 2 + i, ty * 2 + j) - 0.5) * 0.25); g.fillRect(x + 0.6, y + 0.6, 18.8, 18.8);
+    g.fillStyle = shade(base, -0.25); g.globalAlpha = 0.5; g.fillRect(x + 3 + hsh(i, ty) * 10, y + 4 + hsh(j, tx) * 10, 3, 1); g.globalAlpha = 1;
+  }
+  g.fillStyle = shade(base, -0.45); g.fillRect(X, Y, TILE, 0.6); g.fillRect(X, Y + 20, TILE, 0.6); g.fillRect(X, Y, 0.6, TILE); g.fillRect(X + 20, Y, 0.6, TILE);
+}
+function brickTile(g, base, X, Y, tx, ty) {
+  g.fillStyle = shade(base, -0.42); g.fillRect(X, Y, TILE, TILE); // mortar
+  for (let r = 0; r < 4; r++) {
+    const R = ty * 4 + r, off = (R % 2) * 10;
+    for (let c = -1; c < 3; c++) {
+      const bx = X + c * 20 + off, x0 = Math.max(X, bx + 0.7), x1 = Math.min(X + TILE, bx + 20 - 0.7); if (x1 <= x0) continue;
+      g.fillStyle = shade(base, (hsh(R, Math.floor((bx) / 20)) - 0.5) * 0.24); g.fillRect(x0, Y + r * 10 + 0.7, x1 - x0, 8.6);
+      g.fillStyle = shade(base, 0.12); g.globalAlpha = 0.5; g.fillRect(x0, Y + r * 10 + 0.7, x1 - x0, 1); g.globalAlpha = 1; // top lip
+    }
+  }
+}
+function buildStatic(T) {
+  const cv = document.createElement('canvas'); cv.width = W * TILE * ST_SCALE; cv.height = H * TILE * ST_SCALE;
+  const g = cv.getContext('2d'); g.scale(ST_SCALE, ST_SCALE);
+  const lounge = regions[5]?.[12], cell = regions[1]?.[17];
+  const wood = mix('#8a5a34', T.f1, 0.4), carpet = mix(mix(T.rug, '#141414', 0.35), T.f1, 0.3), stone = mix(T.wall, T.f1, 0.35);
+  for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
+    const c = map[ty][tx], X = tx * TILE, Y = ty * TILE;
+    if (c === '#') { if (ring[ty][tx]) brickTile(g, T.wall, X, Y, tx, ty); continue; }
+    const r = c === 'D' ? -2 : regions[ty][tx];
+    if (r === lounge) carpetTile(g, carpet, X, Y); else if (r === cell) stoneTile(g, stone, X, Y, tx, ty); else woodTile(g, wood, X, Y);
+  }
+  // soft shadow where floor meets wall
+  for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
+    if (map[ty][tx] !== '.') continue;
+    const X = tx * TILE, Y = ty * TILE;
+    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      if ((map[ty + dy]?.[tx + dx] ?? '#') !== '#') continue;
+      const gx0 = dx < 0 ? X : dx > 0 ? X + TILE : X, gy0 = dy < 0 ? Y : dy > 0 ? Y + TILE : Y;
+      const gr = g.createLinearGradient(gx0, gy0, gx0 - dx * 9, gy0 - dy * 9); gr.addColorStop(0, 'rgba(0,0,0,.38)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(dx > 0 ? X + TILE - 9 : X, dy > 0 ? Y + TILE - 9 : Y, dx ? 9 : TILE, dy ? 9 : TILE);
+    }
+  }
+  // stone hearth in front of the fireplace
+  const hx = 11 * TILE - 6, hy = TILE - 2, hw = 3 * TILE + 12, hh = 30, hb = mix('#8b8174', T.wall, 0.3);
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(hx + hw / 2, hy + 3, hw / 2 + 2, hh + 2, 0, 0, Math.PI); g.fill();
+  g.save(); g.beginPath(); g.ellipse(hx + hw / 2, hy, hw / 2, hh, 0, 0, Math.PI); g.closePath(); g.clip();
+  for (let i = 0; i < 9; i++) for (let j = 0; j < 3; j++) { g.fillStyle = shade(hb, (hsh(i, j) - 0.5) * 0.3); g.fillRect(hx + i * (hw / 9) + (j % 2) * 7 - 7, hy + j * 10, hw / 9 - 1.2, 8.8); }
+  g.restore();
+  g.strokeStyle = shade(hb, 0.25); g.lineWidth = 1.5; g.beginPath(); g.ellipse(hx + hw / 2, hy, hw / 2, hh, 0, 0, Math.PI); g.stroke(); g.lineWidth = 1;
+  return cv;
+}
+function drawDoor(T, tx, ty, op, lk) {
+  const horiz = map[ty][tx - 1] === '#' && map[ty][tx + 1] === '#'; // wall runs left-right; the passage goes up-down
+  ctx.save(); ctx.translate(tx * TILE + TILE / 2, ty * TILE + TILE / 2); if (!horiz) ctx.rotate(Math.PI / 2);
+  const post = shade(T.wall, -0.15);
+  ctx.fillStyle = post; ctx.fillRect(-20, -12, 5, 24); ctx.fillRect(15, -12, 5, 24);              // door posts
+  const panel = lk ? mix(T.door, '#8a2b2b', 0.65) : T.door;
+  if (op && !lk) { // swung open against its hinge
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-13, -4, 6, 30);
+    ctx.fillStyle = shade(panel, -0.1); ctx.fillRect(-15, -6, 5, 30); ctx.fillStyle = shade(panel, 0.2); ctx.fillRect(-15, -6, 1.2, 30);
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-15, -6, 30, 14);
+    ctx.fillStyle = panel; ctx.fillRect(-15, -7, 30, 14);
+    ctx.fillStyle = shade(panel, -0.35); for (let i = -9; i < 15; i += 6) ctx.fillRect(i, -7, 0.8, 14);   // planks
+    ctx.fillStyle = '#2b2622'; ctx.fillRect(-10, -7, 2.2, 14); ctx.fillRect(8, -7, 2.2, 14);             // iron bands
+    ctx.fillStyle = '#d6a93f'; ctx.beginPath(); ctx.arc(11.5, 1.5, 1.8, 0, Math.PI * 2); ctx.fill();       // handle
+    ctx.fillStyle = shade(panel, 0.25); ctx.fillRect(-15, -7, 30, 1);
+  }
+  ctx.restore();
+  if (lk) { const X = tx * TILE, Y = ty * TILE; ctx.fillStyle = '#f2d0d0'; ctx.fillRect(X + 14, Y + 19, 12, 9); ctx.strokeStyle = '#f2d0d0'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(X + 20, Y + 19, 4, Math.PI, 0); ctx.stroke(); ctx.lineWidth = 1; ctx.fillStyle = '#8a2b2b'; ctx.fillRect(X + 19.2, Y + 22, 1.6, 3); }
+}
+/* bookshelves drawn at a slight angle: you see the top board and the books' spines on the front */
+const BOOKS = ['#7a2e26', '#2f4f6f', '#3f6a45', '#8a6a2f', '#5a3a6a', '#9a8a6a', '#1f3b4f', '#6b2f4a', '#a0522d'];
+function drawShelfP(T, x, y, w, h, facing, seed) {
+  ctx.save();
+  let L, D;
+  if (facing === 'right') { ctx.translate(x, y + h); ctx.rotate(-Math.PI / 2); L = h; D = w; }
+  else if (facing === 'left') { ctx.translate(x + w, y); ctx.rotate(Math.PI / 2); L = h; D = w; }
+  else { ctx.translate(x, y); L = w; D = h; }
+  D = Math.min(D, 30);
+  const wood = mix('#5e3d22', T.wall, 0.2), woodL = shade(wood, 0.2), woodD = shade(wood, -0.45);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(2, D - 1, L - 4, 6);                      // shadow on the floor
+  ctx.fillStyle = woodD; ctx.fillRect(0, 0, L, D);
+  const top = 8; ctx.fillStyle = woodL; ctx.fillRect(0, 0, L, top);                           // top board
+  ctx.fillStyle = shade(woodL, 0.18); ctx.fillRect(0, top - 1.2, L, 1.2);
+  const rows = 2, rh = (D - top - 1) / rows;
+  for (let r = 0; r < rows; r++) {
+    const ry = top + r * rh;
+    ctx.fillStyle = shade(wood, -0.65); ctx.fillRect(3, ry, L - 6, rh - 2);                    // inside of the shelf
+    let bx = 4, i = 0;
+    while (bx < L - 6) {
+      const bw = 2.6 + hsh(seed + r, i) * 3.4, bh = (rh - 3) * (0.62 + hsh(i, seed + r * 7) * 0.36);
+      if (hsh(i * 1.3, r + seed * 2) < 0.07) { bx += bw + 2; i++; continue; }                // the odd gap
+      const col = BOOKS[Math.floor(hsh(i * 3, seed + r) * BOOKS.length)];
+      const lean = hsh(i, seed * 5 + r) < 0.06 ? 1 : 0;
+      ctx.save(); ctx.translate(bx, ry + rh - 2); if (lean) ctx.rotate(-0.25);
+      ctx.fillStyle = col; ctx.fillRect(0, -bh, Math.min(bw, L - 6 - bx), bh);
+      ctx.fillStyle = shade(col, 0.3); ctx.fillRect(0, -bh + 2, Math.min(bw, L - 6 - bx), 1);  // spine band
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.min(bw, L - 6 - bx) - 0.6, -bh, 0.6, bh);
+      ctx.restore();
+      bx += bw + 0.5; i++;
+    }
+    ctx.fillStyle = wood; ctx.fillRect(0, ry + rh - 2, L, 2.4);                                // shelf board
+  }
+  ctx.fillStyle = wood; ctx.fillRect(0, top, 3, D - top); ctx.fillRect(L - 3, top, 3, D - top); // sides
+  ctx.fillStyle = shade(wood, 0.15); ctx.fillRect(0, top, 1, D - top);
+  ctx.restore();
+}
+function shelfFacing(t) {
+  if (t.y2 > t.y1 && (map[t.y1]?.[t.x1 - 1] ?? '#') === '#') return 'right';
+  if (t.y2 > t.y1 && (map[t.y1]?.[t.x2 + 1] ?? '#') === '#') return 'left';
+  return 'down';
+}
+const rect = (o, pad = 0) => [o.x1 * TILE + pad, o.y1 * TILE + pad, (o.x2 - o.x1 + 1) * TILE - 2 * pad, (o.y2 - o.y1 + 1) * TILE - 2 * pad];
+function drawShelf(T, x, y, w, h) {
+  ctx.fillStyle = T.shelf; ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  const cols = ['#7a3b2e', '#2f4f6f', '#3f6a45', '#8a6a2f', '#5a3a6a'], vert = h > w, n = Math.floor((vert ? h : w) / 7);
+  for (let i = 0; i < n; i++) { ctx.fillStyle = cols[(i * 7 + 3) % 5]; if (vert) ctx.fillRect(x + 5, y + 4 + i * 7, w - 10, 5); else ctx.fillRect(x + 4 + i * 7, y + 5, 5, h - 10); }
+  ctx.strokeStyle = mix(T.shelf, '#ffffff', 0.35); ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, w - 4, h - 4); ctx.lineWidth = 1;
+}
+function drawFireplace(T, now) {
+  const x = 11 * TILE, y = 0, w = 3 * TILE, h = TILE;
+  ctx.fillStyle = T.hearth; ctx.fillRect(x + 2, y + 2, w - 4, h - 2);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) { ctx.fillStyle = shade(T.hearth, (hsh(r, c) - 0.5) * 0.25); ctx.fillRect(x + 3 + c * 13 + (r % 2) * 6 - 3, y + 3 + r * 9, 11.8, 8); }
+  ctx.fillStyle = '#120c09'; ctx.beginPath(); ctx.moveTo(x + 22, y + h); ctx.lineTo(x + 22, y + 15); ctx.quadraticCurveTo(x + w / 2, y + 4, x + w - 22, y + 15); ctx.lineTo(x + w - 22, y + h); ctx.fill();
+  // the firebox shape: everything inside is clipped to it
+  ctx.save(); ctx.beginPath(); ctx.moveTo(x + 22, y + h); ctx.lineTo(x + 22, y + 15); ctx.quadraticCurveTo(x + w / 2, y + 4, x + w - 22, y + 15); ctx.lineTo(x + w - 22, y + h); ctx.closePath(); ctx.clip();
+  const bx = x + w / 2, by = y + h - 3; // centre of the fire bed
+  if (fire) {
+    const fl = 0.85 + 0.15 * Math.sin(now * 0.013) * Math.sin(now * 0.031 + 1);
+    // back-glow on the inside of the firebox
+    let g = ctx.createRadialGradient(bx, by, 2, bx, by, 46); g.addColorStop(0, `rgba(255,140,40,${0.75 * fl})`); g.addColorStop(0.5, `rgba(180,60,20,${0.35 * fl})`); g.addColorStop(1, 'rgba(60,20,10,0)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  }
+  // logs: two crossed, bark ends showing
+  const log = (x1, y1, x2, y2, burn) => {
+    ctx.lineCap = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = burn ? '#2a1a10' : '#5a3a22'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.strokeStyle = burn ? `rgba(255,120,40,${0.5 + 0.4 * Math.sin(now * 0.01 + x1)})` : '#7a5232'; ctx.beginPath(); ctx.moveTo(x1, y1 + 1.5); ctx.lineTo(x2, y2 + 1.5); ctx.stroke();
+    ctx.fillStyle = burn ? '#4a2a16' : '#8a6440'; ctx.beginPath(); ctx.arc(x2, y2, 3, 0, Math.PI * 2); ctx.fill(); ctx.lineCap = 'butt'; ctx.lineWidth = 1;
+  };
+  log(bx - 26, by - 1, bx + 18, by - 6, fire); log(bx + 26, by - 1, bx - 16, by - 7, fire);
+  if (fire) {
+    ctx.globalCompositeOperation = 'lighter';
+    // glowing ember bed
+    for (let i = 0; i < 16; i++) { const ex = bx - 28 + hsh(i, 2) * 56, ey = by - 1 + hsh(i, 5) * 3, a = 0.4 + 0.4 * Math.sin(now * 0.006 + i * 2.1); ctx.fillStyle = `rgba(255,${90 + (i % 3) * 40},30,${a})`; ctx.beginPath(); ctx.arc(ex, ey, 1.4 + hsh(i, 9) * 1.4, 0, Math.PI * 2); ctx.fill(); }
+    // flame tongues: three layers, red outside to near-white core
+    const layer = (n, spread, hMul, wMul, c0, c1, seed) => {
+      for (let i = 0; i < n; i++) {
+        const t = now * 0.001, ph = t * (5 + hsh(i, seed) * 3) + i * 2.3 + seed;
+        const fx = bx + (i - (n - 1) / 2) * spread + Math.sin(ph * 0.7) * 2;
+        const fh = hMul * (0.72 + 0.28 * Math.sin(ph) * Math.sin(ph * 1.7 + 1)) * (1 - Math.abs(i - (n - 1) / 2) / n * 0.8);
+        const fw = wMul * (0.85 + 0.15 * Math.sin(ph * 2.1));
+        const sway = Math.sin(ph * 1.3) * fh * 0.18, tipX = fx + sway, tipY = by - fh;
+        const gr = ctx.createLinearGradient(fx, by, fx, tipY); gr.addColorStop(0, c0); gr.addColorStop(1, c1);
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(fx - fw, by);
+        ctx.bezierCurveTo(fx - fw * 1.1, by - fh * 0.45, tipX - fw * 0.35, by - fh * 0.75, tipX, tipY);
+        ctx.bezierCurveTo(tipX + fw * 0.35, by - fh * 0.75, fx + fw * 1.1, by - fh * 0.45, fx + fw, by); ctx.fill();
+      }
+    };
+    layer(6, 9, 27, 8, 'rgba(255,70,20,.75)', 'rgba(200,30,10,0)', 1);
+    layer(5, 8, 21, 6, 'rgba(255,150,40,.85)', 'rgba(255,90,20,0)', 7);
+    layer(4, 7, 13, 4, 'rgba(255,240,170,.95)', 'rgba(255,190,80,0)', 13);
+    // sparks drifting up
+    for (let i = 0; i < 9; i++) {
+      const life = 1400 + hsh(i, 3) * 900, t = ((now + hsh(i, 1) * 5000) % life) / life;
+      const sx = bx + (hsh(i, 7) - 0.5) * 40 + Math.sin(t * 6 + i) * 4, sy = by - 4 - t * 34;
+      ctx.fillStyle = `rgba(255,${180 + (i % 3) * 25},90,${(1 - t) * 0.9})`; ctx.fillRect(sx, sy, 1.3, 1.3);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    // cold: grey ash and a faint last ember
+    ctx.fillStyle = '#4a4440'; ctx.beginPath(); ctx.ellipse(bx, by + 1, 28, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,90,30,${0.25 + 0.2 * Math.sin(now * 0.004)})`; ctx.beginPath(); ctx.arc(bx - 6, by, 1.3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  // warm light spilling onto the stone surround
+  if (fire) { const g = ctx.createRadialGradient(bx, by, 10, bx, by, 70); g.addColorStop(0, 'rgba(255,150,60,.22)'); g.addColorStop(1, 'rgba(255,150,60,0)'); ctx.fillStyle = g; ctx.fillRect(x - 10, y, w + 20, h + 40); }
+  ctx.fillStyle = mix(T.hearth, '#ffffff', 0.2); ctx.fillRect(x, y, w, 4);
+}
+/* ---- game-night table: DM screen, dice trays, dice, a map (just for looks) ---- */
+function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function die(kind, x, y, r, col, rot = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(1.2, 1.5, r, 0, Math.PI * 2); ctx.fill();   // shadow
+  ctx.fillStyle = col; ctx.strokeStyle = mix(col, '#000000', 0.45); ctx.lineWidth = 1;
+  if (kind === 'd6') {
+    rrect(-r * 0.8, -r * 0.8, r * 1.6, r * 1.6, 1.5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; for (const [px, py] of [[-.35, -.35], [0, 0], [.35, .35]]) { ctx.beginPath(); ctx.arc(px * r, py * r, r * 0.14, 0, Math.PI * 2); ctx.fill(); }
+  } else {
+    const n = kind === 'd20' ? 6 : kind === 'd8' ? 4 : 5;                   // outline: hexagon / diamond / pentagon
+    ctx.beginPath(); for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / n; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = mix(col, '#ffffff', 0.45); ctx.beginPath();                                      // inner face
+    for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 3; ctx.lineTo(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55); } ctx.closePath(); ctx.stroke();
+  }
+  ctx.restore();
+}
+function diceTray(x, y, w, h, felt, dice) {
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; rrect(x + 2, y + 2, w, h, 4); ctx.fill();
+  ctx.fillStyle = '#3b2616'; rrect(x, y, w, h, 4); ctx.fill();                 // wooden rim
+  ctx.fillStyle = felt; rrect(x + 3, y + 3, w - 6, h - 6, 2.5); ctx.fill();    // felt
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; rrect(x + 4.5, y + 4.5, w - 9, h - 9, 2); ctx.stroke();
+  for (const d of dice) die(d[0], x + d[1] * w, y + d[2] * h, d[3] || 4.2, d[4], d[5] || 0);
+}
+function drawTableDecor(x, y, w, h) {
+  // a sketched dungeon map in the middle
+  const mx = x + w * 0.28, my = y + h * 0.36, mw = w * 0.44, mh = h * 0.3;
+  ctx.save(); ctx.translate(mx + mw / 2, my + mh / 2); ctx.rotate(-0.06);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-mw / 2 + 2, -mh / 2 + 2, mw, mh);
+  ctx.fillStyle = '#e8d9b0'; ctx.fillRect(-mw / 2, -mh / 2, mw, mh);
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.rect(-mw / 2 + 5, -mh / 2 + 5, 12, 10); ctx.rect(mw / 2 - 18, -mh / 2 + 8, 13, 12); ctx.rect(-6, mh / 2 - 15, 14, 10);
+  ctx.moveTo(-mw / 2 + 17, -mh / 2 + 10); ctx.lineTo(mw / 2 - 18, -mh / 2 + 13); ctx.moveTo(0, -mh / 2 + 12); ctx.lineTo(1, mh / 2 - 15); ctx.stroke();
+  ctx.fillStyle = '#b03a2e'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.fillText('x', mw / 2 - 11, -mh / 2 + 18);
+  ctx.restore();
+  // DM's notes and dice behind the screen
+  ctx.fillStyle = '#f1e6c8'; ctx.save(); ctx.translate(x + w * 0.36, y + 10); ctx.rotate(0.08); ctx.fillRect(-9, -5, 18, 11); ctx.fillStyle = '#9a8a6a'; for (let i = 0; i < 3; i++) ctx.fillRect(-7, -3 + i * 3, 13 - i * 3, 1); ctx.restore();
+  die('d20', x + w * 0.62, y + 11, 4.2, '#5b3f99', 0.3);
+  // the DM screen: three folding panels facing the players
+  const sy = y + 22, sx = x + w * 0.12, sw = w * 0.76, pw = sw / 3, pts = [[sx, sy + 4], [sx + pw, sy], [sx + 2 * pw, sy], [sx + sw, sy + 4]];
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 7; ctx.beginPath(); pts.forEach(([px, py], i) => i ? ctx.lineTo(px + 1, py + 4) : ctx.moveTo(px + 1, py + 4)); ctx.stroke();
+  ctx.strokeStyle = '#6e1f24'; ctx.lineWidth = 6; ctx.beginPath(); pts.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.stroke();
+  ctx.strokeStyle = '#d6a93f'; ctx.lineWidth = 1.5; ctx.beginPath(); pts.forEach(([px, py], i) => i ? ctx.lineTo(px, py + 2.5) : ctx.moveTo(px, py + 2.5)); ctx.stroke();
+  ctx.fillStyle = '#d6a93f'; for (const [px, py] of pts.slice(1, 3)) { ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fill(); }   // hinges
+  ctx.lineCap = 'butt'; ctx.lineWidth = 1;
+  // a dice tray in front of each player seat
+  const tw = w * 0.3, th = h * 0.17;
+  const felt = (k, d) => trays[k] || d; // each mat takes the colour of whoever last sat in its chair
+  diceTray(x + 4, y + h * 0.38 - th / 2, tw, th, felt(TRAY_SEATS[0], '#4b2d6b'), [['d20', 0.35, 0.5, 4.6, '#e0b84a', 0.2], ['d6', 0.72, 0.45, 3.8, '#f2f2f2', 0.5]]);
+  diceTray(x + 4, y + h * 0.86 - th / 2, tw, th, felt(TRAY_SEATS[1], '#1f5a3a'), [['d20', 0.62, 0.5, 4.6, '#c0392b', 1.1], ['d8', 0.3, 0.42, 4, '#3a7bd5']]);
+  diceTray(x + w - tw - 4, y + h * 0.38 - th / 2, tw, th, felt(TRAY_SEATS[2], '#6b1f2a'), [['d20', 0.6, 0.48, 4.6, '#2a9d8f', 0.6], ['d12', 0.28, 0.55, 4, '#f4a261']]);
+  diceTray(x + w - tw - 4, y + h * 0.86 - th / 2, tw, th, felt(TRAY_SEATS[3], '#1d3b6b'), [['d20', 0.4, 0.52, 4.6, '#9b5de5', 0.9], ['d6', 0.75, 0.45, 3.8, '#222222', 0.2]]);
+  // a few loose dice that rolled away
+  die('d20', x + w * 0.5, y + h * 0.75, 4.4, '#e76f51', 0.4); die('d6', x + w * 0.42, y + h * 0.84, 3.6, '#e9c46a', 0.9); die('d10', x + w * 0.6, y + h * 0.88, 3.8, '#2a9d8f', 1.4);
+}
+
+function drawRugDecor(x, y, w, h) { // a relaxed game corner on the lounge rug
+  const sheet = (cx, cy, rot) => { // a character sheet
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-9, -12, 20, 26); ctx.fillStyle = '#eee3c4'; ctx.fillRect(-10, -13, 20, 26);
+    ctx.fillStyle = '#9a8a6a'; ctx.fillRect(-7, -10, 9, 3); for (let i = 0; i < 5; i++) ctx.fillRect(-7, -4 + i * 3.4, 14 - (i % 2) * 4, 1);
+    ctx.strokeStyle = '#b8a77f'; ctx.strokeRect(3, -10, 5, 5); ctx.restore();
+  };
+  sheet(x + w * 0.18, y + h * 0.4, -0.25); sheet(x + w * 0.82, y + h * 0.58, 0.3);
+  // pencil
+  ctx.save(); ctx.translate(x + w * 0.3, y + h * 0.78); ctx.rotate(0.5);
+  ctx.fillStyle = '#e8b33a'; ctx.fillRect(-9, -1.5, 15, 3); ctx.fillStyle = '#f0d0a8'; ctx.beginPath(); ctx.moveTo(6, -1.5); ctx.lineTo(10, 0); ctx.lineTo(6, 1.5); ctx.fill(); ctx.fillStyle = '#d97a8a'; ctx.fillRect(-11, -1.5, 2.5, 3); ctx.restore();
+  // dice bag, open, with a few dice spilling out
+  const bx = x + w * 0.62, by = y + h * 0.3;
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(bx + 2, by + 2, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5a3b7a'; ctx.beginPath(); ctx.ellipse(bx, by, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2e1d40'; ctx.beginPath(); ctx.ellipse(bx + 2, by - 1, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#d6a93f'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(bx - 8, by - 3); ctx.quadraticCurveTo(bx - 14, by - 10, bx - 6, by - 11); ctx.stroke(); ctx.lineWidth = 1;
+  die('d20', bx + 13, by + 5, 4, '#e0b84a', 0.3); die('d6', bx + 9, by + 13, 3.4, '#f2f2f2', 0.8); die('d8', bx + 19, by + 12, 3.6, '#3a7bd5', 0.2);
+  // a deck of cards, one turned over
+  ctx.save(); ctx.translate(x + w * 0.42, y + h * 0.62); ctx.rotate(-0.15);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-5, -6, 12, 16); ctx.fillStyle = '#7a2a2a'; ctx.fillRect(-6, -7, 12, 16); ctx.strokeStyle = '#d6a93f'; ctx.strokeRect(-4.5, -5.5, 9, 13);
+  ctx.rotate(0.5); ctx.fillStyle = '#f4f0e6'; ctx.fillRect(4, -9, 11, 15); ctx.fillStyle = '#b03a2e'; ctx.font = 'bold 8px system-ui'; ctx.textAlign = 'center'; ctx.fillText('♥', 9.5, 1);
+  ctx.restore();
+  // a few loose dice mid-roll
+  die('d20', x + w * 0.5, y + h * 0.3, 4.2, '#c0392b', 1.0); die('d12', x + w * 0.58, y + h * 0.72, 3.8, '#2a9d8f', 0.4); die('d4', x + w * 0.72, y + h * 0.85, 3.6, '#9b5de5', 0.7);
+}
+
+/* ---- bedrooms: everything takes the colour of whoever last slept there ---- */
+function drawBedroom(b, now) {
+  const c = bedCol[dk(b.x1, b.y1)] || '#9c8f78', dark = mix(c, '#000000', 0.4), light = mix(c, '#ffffff', 0.35);
+  const room = BEDROOMS.find(r => b.x1 >= r.x1 && b.x1 <= r.x2 && b.y1 >= r.y1 && b.y1 <= r.y2);
+  if (room) {
+    const X = room.x1 * TILE, Y = room.y1 * TILE, RW = (room.x2 - room.x1 + 1) * TILE;
+    // rug
+    const rw = Math.min(RW - TILE * 1.8, TILE * 1.7), rh = TILE * 1.3, rx = X + TILE * 1.3 + (RW - TILE * 1.6 - rw) / 2, ry = Y + TILE * 2.1;
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = mix(c, '#000000', 0.5); ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeStyle = mix(c, '#000000', 0.15); ctx.lineWidth = 1.5; ctx.strokeRect(rx + 3.5, ry + 3.5, rw - 7, rh - 7);
+    ctx.fillStyle = mix(c, '#000000', 0.25); ctx.beginPath(); ctx.moveTo(rx + rw / 2, ry + 9); ctx.lineTo(rx + rw - 12, ry + rh / 2); ctx.lineTo(rx + rw / 2, ry + rh - 9); ctx.lineTo(rx + 12, ry + rh / 2); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1; ctx.lineWidth = 1;
+    // pennant hanging on the wall
+    const px = X + TILE * 1.5, py = Y - 3;
+    ctx.fillStyle = '#6b4f2a'; ctx.fillRect(px - 11, py - 2, 22, 3);
+    ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(px - 9, py); ctx.lineTo(px + 9, py); ctx.lineTo(px + 9, py + 15); ctx.lineTo(px, py + 10); ctx.lineTo(px - 9, py + 15); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = light; ctx.beginPath(); ctx.arc(px, py + 5, 2.5, 0, Math.PI * 2); ctx.fill();
+    // bedside table with a candle (lit in the evening and at night)
+    const tx = X + TILE * 1.18, ty = Y + TILE * 0.55;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(tx + 2, ty + 2, 14, 14); ctx.fillStyle = '#5a3d22'; ctx.fillRect(tx, ty, 14, 14); ctx.strokeStyle = dark; ctx.strokeRect(tx + 1.5, ty + 1.5, 11, 11);
+    ctx.fillStyle = '#f2ead8'; ctx.beginPath(); ctx.arc(tx + 7, ty + 7, 3, 0, Math.PI * 2); ctx.fill();
+    if (tod > 0) { const f = 0.6 + 0.4 * Math.sin(now * 0.02 + b.x1); const g = ctx.createRadialGradient(tx + 7, ty + 7, 1, tx + 7, ty + 7, 30); g.addColorStop(0, `rgba(255,200,120,${0.35 * f})`); g.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = g; ctx.fillRect(tx - 24, ty - 24, 62, 62); ctx.fillStyle = '#ffcf6b'; ctx.beginPath(); ctx.arc(tx + 7, ty + 6, 1.6, 0, Math.PI * 2); ctx.fill(); }
+    // chest at the foot of the bed, trimmed in the room colour
+    const cx = b.x1 * TILE + 5, cy = (b.y2 + 1) * TILE + 6;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(cx + 2, cy + 2, TILE - 10, 18); ctx.fillStyle = '#6b4a2a'; ctx.fillRect(cx, cy, TILE - 10, 18);
+    ctx.fillStyle = c; ctx.fillRect(cx, cy + 6, TILE - 10, 3); ctx.fillStyle = '#d6a93f'; ctx.fillRect(cx + (TILE - 10) / 2 - 2, cy + 8, 4, 5);
+  }
+  // the bed: wooden frame, pillow, blanket in the room colour
+  const x = b.x1 * TILE + 3, y = b.y1 * TILE + 3, w = (b.x2 - b.x1 + 1) * TILE - 6, h = (b.y2 - b.y1 + 1) * TILE - 6;
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x + 2, y + 2, w, h);
+  ctx.fillStyle = '#6b4f2a'; ctx.fillRect(x - 1, y - 2, w + 2, h + 3);
+  ctx.fillStyle = '#efe8d6'; ctx.fillRect(x + 2, y + 2, w - 4, h - 4);           // sheet
+  ctx.fillStyle = '#ffffff'; rrect(x + 5, y + 4, w - 10, 14, 4); ctx.fill();     // pillow
+  ctx.fillStyle = c; ctx.fillRect(x + 2, y + 24, w - 4, h - 26);                 // blanket
+  ctx.fillStyle = light; ctx.fillRect(x + 2, y + 24, w - 4, 4);                  // folded edge
+  ctx.strokeStyle = dark; ctx.beginPath(); ctx.moveTo(x + 2, y + h - 12); ctx.lineTo(x + w - 2, y + h - 12); ctx.stroke();
+}
+
+/* ---- outside, windows, time of day ---- */
+const OUT_TINT = ['rgba(70,140,235,0.3)', 'rgba(255,120,50,0.18)', 'rgba(5,10,40,0.6)'];
+const IN_TINT = ['rgba(120,170,255,0.05)', 'rgba(255,140,60,0.07)', 'rgba(8,12,40,0.32)'];
+function drawOutside(now) { // whole canvas; the house is drawn on top of it
+  if (OUT_TINT[tod]) { ctx.fillStyle = OUT_TINT[tod]; ctx.fillRect(0, 0, CW(), CH()); }
+  if (tod === 2 && !rain) { ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 60; i++) { const x = (i * 7919 % 997) / 997 * CW(), y = (i * 104729 % 991) / 991 * CH(), tw = 0.6 + 0.4 * Math.sin(now * 0.002 + i); ctx.globalAlpha = 0.35 * tw; ctx.fillRect(x, y, 1.5, 1.5); } ctx.globalAlpha = 1; }
+  if (!rain) return;
+  const W_ = CW(), H_ = CH(), night = tod === 2;
+  ctx.fillStyle = 'rgba(40,50,70,0.2)'; ctx.fillRect(0, 0, W_, H_);
+  // drifting mist
+  for (let i = 0; i < 3; i++) {
+    const mx = ((now * 0.012 * (i + 1) + i * 400) % (W_ + 600)) - 300, my = H_ * (0.25 + i * 0.28);
+    const g = ctx.createRadialGradient(mx, my, 10, mx, my, 280); g.addColorStop(0, night ? 'rgba(120,140,180,.07)' : 'rgba(210,220,235,.09)'); g.addColorStop(1, 'rgba(210,220,235,0)');
+    ctx.fillStyle = g; ctx.fillRect(mx - 300, my - 300, 600, 600);
+  }
+  // splashes where drops land
+  const ns = Math.round(W_ * H_ / 9000);
+  ctx.lineWidth = 0.9;
+  for (let i = 0; i < ns; i++) {
+    const per = 520 + hsh(i, 4) * 400, cyc = Math.floor((now + hsh(i, 8) * per) / per), t = ((now + hsh(i, 8) * per) % per) / per;
+    const sx = hsh(i, cyc) * W_, sy = hsh(cyc, i + 0.5) * H_, r = 1 + t * 5;
+    ctx.strokeStyle = night ? `rgba(150,170,220,${(1 - t) * 0.5})` : `rgba(215,228,245,${(1 - t) * 0.6})`;
+    ctx.beginPath(); ctx.ellipse(sx, sy, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+    if (t < 0.25) { ctx.fillStyle = ctx.strokeStyle; ctx.fillRect(sx - 2.5 + t * 4, sy - 2 - t * 10, 1, 1); ctx.fillRect(sx + 2 - t * 4, sy - 1.5 - t * 9, 1, 1); }
+  }
+  // falling rain in three depths (far: small, faint, slow; near: long, bright, fast)
+  const wind = 0.22;
+  for (const [dens, len, sp, a, lw] of [[2600, 7, 380, 0.22, 0.8], [5200, 12, 620, 0.38, 1.1], [11000, 20, 900, 0.55, 1.5]]) {
+    const n = Math.round(W_ * H_ / dens);
+    ctx.strokeStyle = night ? `rgba(160,180,230,${a})` : `rgba(200,218,245,${a})`; ctx.lineWidth = lw; ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const s2 = sp * (0.85 + hsh(i, len) * 0.3), y = ((now * s2 / 1000 + hsh(len, i) * (H_ + 60)) % (H_ + 60)) - 30, x = hsh(i, sp) * (W_ + 120) - y * wind;
+      ctx.moveTo(x, y); ctx.lineTo(x - len * wind, y + len);
+    }
+    ctx.stroke();
+  }
+  ctx.lineWidth = 1;
+}
+function drawIndoorLight() { // darken / warm the inside of the house for evening and night
+  if (!IN_TINT[tod]) return;
+  ctx.fillStyle = IN_TINT[tod]; ctx.beginPath(); // one shape, so tile edges don't show as a grid
+  for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) if (map[ty][tx] !== '#' || ring[ty][tx]) ctx.rect(tx * TILE, ty * TILE, TILE, TILE);
+  ctx.fill();
+}
+function windowInfo(x, y) { // which side of the wall is inside
+  for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) if (map[y + dy]?.[x + dx] === '.') return { dx, dy, horiz: dy !== 0 };
+  return null;
+}
+function drawWindow(T, [x, y, barred], now) {
+  const inf = windowInfo(x, y); if (!inf) return;
+  const X = x * TILE, Y = y * TILE, cx = X + TILE / 2, cy = Y + TILE / 2;
+  // light: daylight falls into the room; at night lit windows glow outward
+  const lx = cx + inf.dx * TILE * 1.2, ly = cy + inf.dy * TILE * 1.2, ox = cx - inf.dx * TILE * 0.9, oy = cy - inf.dy * TILE * 0.9;
+  const lightIn = tod === 0 ? ['255,245,210', rain ? 0.07 : 0.14] : tod === 1 ? ['255,170,90', 0.12] : null;
+  if (lightIn) { const g = ctx.createRadialGradient(lx, ly, 4, lx, ly, TILE * 1.4); g.addColorStop(0, `rgba(${lightIn[0]},${lightIn[1]})`); g.addColorStop(1, `rgba(${lightIn[0]},0)`); ctx.fillStyle = g; ctx.fillRect(lx - TILE * 1.5, ly - TILE * 1.5, TILE * 3, TILE * 3); }
+  if (tod === 2) { const g = ctx.createRadialGradient(ox, oy, 2, ox, oy, TILE); g.addColorStop(0, 'rgba(255,190,110,0.28)'); g.addColorStop(1, 'rgba(255,190,110,0)'); ctx.fillStyle = g; ctx.fillRect(ox - TILE, oy - TILE, TILE * 2, TILE * 2); }
+  const [gx, gy, gw, gh] = inf.horiz ? [X + 5, cy - 6, TILE - 10, 12] : [cx - 6, Y + 5, 12, TILE - 10];
+  ctx.fillStyle = mix(T.wall, '#ffffff', 0.4); ctx.fillRect(gx - 2, gy - 2, gw + 4, gh + 4);      // frame
+  let sky;
+  if (tod === 0) { sky = ctx.createLinearGradient(gx, gy, gx + gw, gy + gh); sky.addColorStop(0, rain ? '#7f9cc0' : '#5fb0ff'); sky.addColorStop(1, rain ? '#9fb4cc' : '#a9dcff'); }
+  else if (tod === 1) { sky = ctx.createLinearGradient(gx, gy, gx + gw, gy + gh); sky.addColorStop(0, rain ? '#c08a6a' : '#ffb36b'); sky.addColorStop(1, '#9a5a8a'); }
+  else sky = rain ? '#151a2e' : '#1a2347';
+  ctx.fillStyle = sky; ctx.fillRect(gx, gy, gw, gh);
+  if (tod === 2 && !rain) { ctx.fillStyle = '#fff'; ctx.fillRect(gx + gw * 0.7, gy + gh * 0.3, 1.5, 1.5); }
+  if (rain) { // beads of water on the glass, and drops that run down leaving a trail
+    ctx.save(); ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
+    ctx.fillStyle = 'rgba(40,60,90,.18)'; ctx.fillRect(gx, gy, gw, gh);
+    for (let i = 0; i < 9; i++) { const px = gx + hsh(i + x, y) * gw, py = gy + hsh(y + i, x) * gh, r = 0.5 + hsh(i, x + y) * 0.9; ctx.fillStyle = 'rgba(235,245,255,.55)'; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 0; i < 3; i++) {
+      const per = 1600 + hsh(i, x) * 1600, t = ((now + hsh(x, i + y) * per) % per) / per, px = gx + hsh(i * 3, x + y) * gw, len = Math.max(gw, gh) + 6;
+      const py = gy - 3 + t * len, tr = Math.min(10, t * len);
+      const g = ctx.createLinearGradient(px, py - tr, px, py); g.addColorStop(0, 'rgba(230,240,255,0)'); g.addColorStop(1, 'rgba(230,240,255,.55)');
+      ctx.fillStyle = g; ctx.fillRect(px - 0.5, py - tr, 1, tr);
+      ctx.fillStyle = 'rgba(245,250,255,.85)'; ctx.beginPath(); ctx.arc(px, py, 1.1, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  ctx.fillStyle = mix(T.wall, '#ffffff', 0.4);                                                    // centre bar
+  if (inf.horiz) ctx.fillRect(cx - 1, gy, 2, gh); else ctx.fillRect(gx, cy - 1, gw, 2);
+  if (barred) { ctx.fillStyle = '#222'; for (let i = 1; i < 5; i++) { if (inf.horiz) ctx.fillRect(gx + i * gw / 5 - 1, gy - 2, 2, gh + 4); else ctx.fillRect(gx - 2, gy + i * gh / 5 - 1, gw + 4, 2); } }
+}
+function frame(now) {
+  const T = themeOf(theme);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = T.bg; ctx.fillRect(0, 0, CW(), CH());
+  if (map.length) drawOutside(now);
+  if (map.length) {
+    const dt = Math.min(100, now - (frame.last || now)); frame.last = now;
+    const tg = camTarget(), k = 1 - Math.pow(0.86, dt / 16.7); // same glide speed whatever the frame rate
+    for (const key of ['x', 'y', 'w', 'h']) cam[key] += Math.abs(tg[key] - cam[key]) < 1 ? tg[key] - cam[key] : (tg[key] - cam[key]) * k;
+    const v = view(); ctx.save(); ctx.translate(v.ox, v.oy); ctx.scale(v.s, v.s);
+    if (staticKey !== theme + '|' + map.join('')) { staticCv = buildStatic(T); staticKey = theme + '|' + map.join(''); }
+    ctx.drawImage(staticCv, 0, 0, W * TILE, H * TILE);
+    for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) if (map[ty][tx] === 'D') drawDoor(T, tx, ty, open.has(dk(tx, ty)), locked.has(dk(tx, ty)));
+    for (const r of rugs) { const [x, y, w, h] = rect(r, 3); ctx.fillStyle = T.rug; ctx.fillRect(x, y, w, h); ctx.strokeStyle = T.trim; ctx.lineWidth = 2; ctx.strokeRect(x + 4, y + 4, w - 8, h - 8); ctx.strokeRect(x + 9, y + 9, w - 18, h - 18); ctx.lineWidth = 1; if (r.decor) drawRugDecor(x, y, w, h); }
+    for (const [x1, y1, x2, y2] of WALL_SHELVES) drawShelfP(T, x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE, 'down', x1 * 7 + y1);
+    drawFireplace(T, now);
+    for (const t of tables) {
+      const [x, y, w, h] = rect(t, 3);
+      if (t.k === 'shelf') drawShelfP(T, t.x1 * TILE, t.y1 * TILE, (t.x2 - t.x1 + 1) * TILE, (t.y2 - t.y1 + 1) * TILE, shelfFacing(t), t.x1 * 7 + t.y1);
+      else if (t.k === 'bed') drawBedroom(t, now);
+      else {
+        ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + 3, y + 4, w, h);
+        ctx.fillStyle = T.table; ctx.fillRect(x, y, w, h);
+        const vert = h > w; ctx.fillStyle = shade(T.table, -0.3);                       // boards along the long side
+        for (let k = 12; k < (vert ? w : h) - 4; k += 12) vert ? ctx.fillRect(x + k, y + 3, 0.8, h - 6) : ctx.fillRect(x + 3, y + k, w - 6, 0.8);
+        ctx.fillStyle = shade(T.table, 0.1); ctx.globalAlpha = 0.4;
+        for (let k = 0; k < 14; k++) { const gx = x + 4 + hsh(k, t.x1) * (w - 8), gy = y + 4 + hsh(t.y1, k) * (h - 8); vert ? ctx.fillRect(gx, gy, 0.6, 14) : ctx.fillRect(gx, gy, 14, 0.6); }
+        ctx.globalAlpha = 1; ctx.strokeStyle = T.ttrim; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, w - 4, h - 4); ctx.lineWidth = 1;
+        if (t.decor) drawTableDecor(x, y, w, h);
+      }
+    }
+    for (const [k, { a, s }] of seats) {
+      if (s === 'bed') continue; // drawn with its bed
+      const [tx, ty] = k.split(',').map(Number);
+      ctx.save(); ctx.translate((tx + 0.5) * TILE, (ty + 0.5) * TILE); ctx.rotate(a * Math.PI / 180);
+      if (s === 'sofa' || s === 'corner') { // pieces fill the whole tile so neighbours join up; a corner has a back on two sides
+        ctx.fillStyle = T.sofa; ctx.fillRect(-20, -19, 40, 38);
+        ctx.fillStyle = T.sofaBack; ctx.fillRect(-20, -19, 40, 10); if (s === 'corner') ctx.fillRect(10, -19, 10, 38);
+        ctx.fillStyle = T.cushion; ctx.fillRect(-17, -6, s === 'corner' ? 24 : 34, 22);
+      }
+      else if (s === 'throne') { // big plush armchair in the colour of whoever last sat in it (the DM's to start with)
+        const c = seatCol[k] || players.find(p => p.role === 'dm')?.color || '#8e3a35', dk2 = shade(c, -0.4), lt = shade(c, 0.25);
+        ctx.fillStyle = 'rgba(0,0,0,.4)'; rrect(-17, -15, 37, 37, 8); ctx.fill();
+        ctx.fillStyle = '#2a170b'; rrect(-19, -19, 38, 38, 8); ctx.fill();                 // dark frame outline
+        ctx.fillStyle = dk2; rrect(-18, -18, 36, 36, 7); ctx.fill();                       // body
+        ctx.fillStyle = c; rrect(-17, -18, 34, 11, 6); ctx.fill();                         // tall back
+        ctx.fillStyle = c; rrect(-18, -9, 8, 26, 4); ctx.fill(); rrect(10, -9, 8, 26, 4); ctx.fill(); // arms
+        ctx.fillStyle = lt; rrect(-10, -7, 20, 22, 5); ctx.fill();                          // seat cushion
+        ctx.fillStyle = dk2; for (const [bx, by] of [[-5, -13], [0, -13], [5, -13], [-4, 1], [4, 1], [0, 8]]) { ctx.beginPath(); ctx.arc(bx, by, 1.1, 0, Math.PI * 2); ctx.fill(); } // tufting
+        ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-15, -17, 30, 1.5);
+      }
+      else { // dining chair: light wood frame + coloured seat pad, dark outline so it stands out from the floor
+        const fr = mix('#c08a52', T.chair, 0.25), pad = shade(T.sofa, 0.05);
+        ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(-10, -10, 24, 25);
+        ctx.fillStyle = '#1e120a'; ctx.fillRect(-13, -15, 26, 28);
+        ctx.fillStyle = fr; ctx.fillRect(-12, -9, 24, 21);
+        ctx.fillStyle = pad; rrect(-9, -6, 18, 15, 3); ctx.fill();
+        ctx.fillStyle = shade(fr, -0.15); ctx.fillRect(-12, -14, 24, 6); ctx.fillStyle = shade(fr, 0.25); ctx.fillRect(-12, -14, 24, 1.5);
+      }
+      ctx.restore();
+    }
+    ctx.fillStyle = T.wall; ctx.globalAlpha = 0.9; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('CELL', 18 * TILE, 2 * TILE + 4); ctx.globalAlpha = 1;
+    drawIndoorLight();
+    for (const w of WINDOWS) drawWindow(T, w, now);
+    if (fire) { // warm light over the living room
+      ctx.save(); ctx.beginPath(); ctx.rect(9 * TILE, TILE, 7 * TILE, 8 * TILE); ctx.clip();
+      const g = ctx.createRadialGradient(FIRE_X, 50, 10, FIRE_X, 50, 250), a = 0.17 + 0.04 * Math.sin(now * 0.011) + 0.02 * Math.sin(now * 0.027);
+      g.addColorStop(0, `rgba(255,150,60,${a * (tod === 2 ? 1.7 : tod === 1 ? 1.25 : 1)})`); g.addColorStop(1, 'rgba(255,150,60,0)'); ctx.fillStyle = g; ctx.fillRect(9 * TILE, TILE, 7 * TILE, 8 * TILE); ctx.restore();
+    }
+    if (drag) {
+      const x1 = Math.min(drag.a[0], drag.b[0]), x2 = Math.max(drag.a[0], drag.b[0]), y1 = Math.min(drag.a[1], drag.b[1]), y2 = Math.max(drag.a[1], drag.b[1]);
+      ctx.fillStyle = 'rgba(130,200,120,.35)'; ctx.fillRect(x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE);
+      ctx.strokeStyle = '#8fd18f'; ctx.strokeRect(x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE);
+    }
+    ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    const meP = players.find(q => q.id === myId), rb = zoomOn() && roomBox[lastRoom];
+    for (const p of players) {
+      if (rb && p.id !== myId && !roomsAt(p).includes(lastRoom)) continue; // room view: people in other rooms are hidden
+      const s = shown.get(p.id) || { x: p.x, y: p.y };
+      s.x += (p.x - s.x) * 0.4; s.y += (p.y - s.y) * 0.4; shown.set(p.id, s);
+      ctx.globalAlpha = p.ghost ? 0.45 : 1;
+      if (p.talk) { // speaking glow: bright if you can hear them, faint if you can't
+        const heard = p.id === myId || hearing(meP, p) > 0, pulse = 0.5 + 0.5 * Math.sin(now * 0.012);
+        ctx.beginPath(); ctx.arc(s.x, s.y, RADIUS + 5 + pulse * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = heard ? `rgba(80,230,120,${0.25 + 0.2 * pulse})` : 'rgba(210,210,210,.12)'; ctx.fill();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = heard ? `rgba(80,230,120,${0.7 + 0.3 * pulse})` : 'rgba(210,210,210,.4)'; ctx.stroke();
+      }
+      if (p.direct && (role === 'dm' || p.id === myId)) { // private line with the DM
+        ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(s.x, s.y, RADIUS + 10, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = '#ffd43b'; ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.beginPath(); ctx.arc(s.x, s.y, RADIUS, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
+      ctx.lineWidth = p.role === 'dm' ? 3 : p.id === myId ? 2 : 1;
+      ctx.strokeStyle = p.role === 'dm' ? '#ffd43b' : p.id === myId ? '#fff' : '#000'; ctx.stroke();
+      if (p.sleep) { // floating z z Z
+        ctx.fillStyle = 'rgba(220,230,255,.9)';
+        for (let i = 0; i < 3; i++) { const ph = ((now / 1400) + i / 3) % 1; ctx.globalAlpha = (p.ghost ? 0.45 : 1) * Math.sin(ph * Math.PI); ctx.font = `bold ${9 + i * 2}px system-ui`; ctx.fillText('z', s.x + RADIUS + 6 + ph * 8 + i * 3, s.y + 2 - ph * 16); }
+        ctx.globalAlpha = p.ghost ? 0.45 : 1; ctx.font = '13px system-ui';
+      }
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.65)'; const label = p.name + (p.role === 'dm' ? ' (DM)' : '');
+      ctx.strokeText(label, s.x, s.y - RADIUS - 6); ctx.fillStyle = '#fff'; ctx.fillText(label, s.x, s.y - RADIUS - 6);
+      const tags = [p.muted && 'muted', p.deaf && 'deafened', p.direct && (role === 'dm' || p.id === myId) && 'direct'].filter(Boolean);
+      if (tags.length) {
+        ctx.font = 'bold 10px system-ui'; const t = tags.join(' · ');
+        ctx.strokeText(t, s.x, s.y + RADIUS + 14); ctx.fillStyle = p.direct && (role === 'dm' || p.id === myId) ? '#ffd43b' : '#ff8a8a'; ctx.fillText(t, s.x, s.y + RADIUS + 14);
+        ctx.font = '13px system-ui';
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (rb) { // in room view, everything outside your room is darkened
+      ctx.fillStyle = T.bg; ctx.globalAlpha = 0.68; ctx.beginPath();
+      ctx.rect(-4000, -4000, W * TILE + 8000, H * TILE + 8000); ctx.rect(rb.x + 6, rb.y + 6, rb.w - 12, rb.h - 12); ctx.fill('evenodd');
+      const mask = roomMask[lastRoom], x0 = Math.round((rb.x + 6) / TILE), y0 = Math.round((rb.y + 6) / TILE), x1 = x0 + Math.round((rb.w - 12) / TILE), y1 = y0 + Math.round((rb.h - 12) / TILE);
+      ctx.beginPath();
+      for (let ty = y0; ty < y1; ty++) for (let tx = x0; tx < x1; tx++) if (!mask.has(dk(tx, ty))) ctx.rect(tx * TILE, ty * TILE, TILE, TILE); // other rooms inside the frame
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body></html>
+
+</body></html>
