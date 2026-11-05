@@ -6,6 +6,35 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+/* ---- Voice relay (TURN). Voice normally goes straight between browsers; some home, school, work and phone
+   networks block that, and then people can see each other talking but not hear them. A TURN server relays
+   the voice instead. Set ONE of these on Render (Environment tab):
+     METERED_API_KEY + METERED_APP   free account at metered.ca (Open Relay, 20 GB a month free)
+     TURN_URLS + TURN_USERNAME + TURN_CREDENTIAL   any other TURN server (urls comma-separated)
+   With nothing set, the free public Open Relay server is tried. ---- */
+let iceCache = null, iceAt = 0;
+async function getIce() {
+  const env = process.env;
+  if (env.TURN_URLS) return [{ urls: env.TURN_URLS.split(',').map(u => u.trim()).filter(Boolean), username: env.TURN_USERNAME || '', credential: env.TURN_CREDENTIAL || '' }];
+  if (env.METERED_API_KEY && env.METERED_APP) {
+    if (iceCache && Date.now() - iceAt < 30 * 60000) return iceCache;
+    try {
+      const r = await fetch(`https://${env.METERED_APP}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(env.METERED_API_KEY)}`);
+      const j = await r.json(); if (Array.isArray(j)) { iceCache = j; iceAt = Date.now(); return j; }
+      console.warn('TURN: unexpected reply from Metered', JSON.stringify(j).slice(0, 200));
+    } catch (e) { console.warn('TURN: could not reach Metered', e.message); }
+    return iceCache || [];
+  }
+  const user = Math.floor(Date.now() / 1000 + 24 * 3600) + ':cottage';
+  const credential = crypto.createHmac('sha1', 'openrelayprojectsecret').update(user).digest('base64');
+  const h = 'staticauth.openrelay.metered.ca';
+  return [{ urls: [`turn:${h}:80`, `turn:${h}:80?transport=tcp`, `turn:${h}:443`, `turns:${h}:443?transport=tcp`], username: user, credential }];
+}
+async function sendIce(res) {
+  let list = []; try { list = await getIce(); } catch (e) {}
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ iceServers: list }));
+}
+
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_ROOMS = 300, MAX_PER_ROOM = 40, MAX_MSG = 2 * 1024 * 1024; // big enough for the shared Investigator's Book
 // Optional: extra ICE servers for voice (for example a TURN service), as JSON in the ICE_SERVERS setting.
@@ -20,6 +49,7 @@ const page = () => fs.readFileSync(pageFile(), 'utf8')
 
 const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
+  if (url === '/ice') return sendIce(res); // voice relay (TURN) settings for people whose network blocks direct voice
   if (url === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
   if ((url === '/' || url === '/index.html') && !pageFile()) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });

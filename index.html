@@ -187,6 +187,7 @@ body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
 .linkbar{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;background:rgba(30,18,9,.96);border:1px solid #d9822b;color:var(--ink);font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:calc(100% - 24px)}
 .linkbar button{padding:4px 10px;font-size:13px}.spin{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #d9822b;border-top-color:transparent;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.vst{font-size:11px;color:var(--faint);margin-left:4px}.vst.bad{color:#ff8a65}#soundBar{cursor:pointer;font:inherit;font-size:14px;color:var(--ink)}
 [hidden]{display:none!important}
 </style></head>
 <body>
@@ -212,6 +213,7 @@ body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
     <div id="bookHud" hidden><span id="bookHudDot" class="bsw"></span><b id="bookHudTitle"></b><button id="hudRead">Read</button><button id="hudPlace" title="Choose where to put it: a table, or anywhere on the floor nearby">Place…</button><button id="hudDrop" title="Drop it on the floor in front of you">Drop</button><span id="placeHint" hidden>Click a table or the floor near you · Esc to cancel</span><button id="hudShelf">Back on shelf</button></div>
     <div id="toast" hidden></div>
     <div id="notes"></div>
+    <button id="soundBar" class="linkbar" hidden>🔇 Your browser has paused the sound. Click here to hear everyone.</button>
     <div id="relink" class="linkbar" hidden><span class="spin"></span><span id="relinkMsg">Connection lost. Getting you back in…</span><button id="relinkStop">Back to lobby</button></div>
     <div id="linkBar" class="linkbar" hidden><span class="spin"></span><span>Lost the server, reconnecting… The cottage is safe; players will rejoin by themselves.</span></div>
     <div id="brk" hidden><span>☕ Break</span><b id="brkT">10:00</b></div>
@@ -1143,7 +1145,13 @@ function renderList() {
 }
 
 /* ================= Voice chat (WebRTC between every pair; the host relays the setup messages) ================= */
-const RTC_CFG = { iceServers: window.COTTAGE_ICE || [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+const STUN = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+let rtcCfg = { iceServers: window.COTTAGE_ICE || STUN }, hasTurn = false;
+if (RELAY) fetch('/ice', { cache: 'no-store' }).then(r => r.json()).then(j => { // a voice relay for networks that block direct voice
+  if (!Array.isArray(j.iceServers) || !j.iceServers.length) return;
+  rtcCfg = { iceServers: [...STUN, ...j.iceServers] }; hasTurn = true;
+  for (const [id, pr] of peers) if (pr.pc.connectionState !== 'connected') pr.t0 = -1e9; // redial anything not working yet
+}).catch(() => {});
 let micStream = null, micOn = true, micAn = null, talking = false, talkHold = 0, stopTalkTick = () => {}, regions = [];
 const peers = new Map(); // player id -> { pc, sender, gain, el, stream, pend, sending, vol, t0 }
 
@@ -1224,7 +1232,7 @@ function stopVoice() {
 }
 
 function makePeer(id) {
-  const pc = new RTCPeerConnection(RTC_CFG), pr = { pc, sender: null, gain: null, el: null, stream: null, pend: [], sending: undefined, vol: 0, t0: performance.now() };
+  const pc = new RTCPeerConnection(rtcCfg), pr = { pc, sender: null, gain: null, el: null, stream: null, pend: [], sending: undefined, vol: 0, t0: performance.now() };
   peers.set(id, pr);
   pc.onicecandidate = e => { if (e.candidate) send({ t: 'rtc', to: id, data: { ice: e.candidate.toJSON() } }); };
   pc.ontrack = e => {
@@ -1267,7 +1275,7 @@ function syncVoice() { // called on every state update: keep connections up and 
   for (const id of ids) {
     if (id === myId || myId > id) continue;
     const pr = peers.get(id), st = pr?.pc.connectionState;
-    if (!pr || st === 'failed' || (!pr.pc.remoteDescription && now - pr.t0 > 6000)) { dropPeer(id); callPeer(id); }
+    if (!pr || st === 'failed' || (!pr.pc.remoteDescription && now - pr.t0 > 6000) || (st !== 'connected' && now - pr.t0 > 20000)) { const n = (pr?.tries || 0) + 1; dropPeer(id); callPeer(id); peers.get(id).tries = n; }
   }
   const me = players.find(p => p.id === myId); if (!me) return;
   const track = micStream?.getAudioTracks()[0] || null;
@@ -1279,6 +1287,29 @@ function syncVoice() { // called on every state update: keep connections up and 
     if (pr.gain && Math.abs(v - pr.vol) > 0.01) { pr.vol = v; pr.gain.gain.setTargetAtTime(v, ac.currentTime, 0.08); }
   }
 }
+
+/* ---- is each voice link actually working? (seeing someone talk doesn't mean their sound is arriving) ---- */
+const voiceBad = new Set(); let soundOffSince = 0;
+makeTicker(() => {
+  if (!myId || !map.length) { $('soundBar').hidden = true; return; }
+  const now = performance.now();
+  for (const p of players) {
+    if (p.id === myId) continue;
+    const pr = peers.get(p.id), st = pr?.pc.connectionState;
+    const bad = !!pr && (st === 'failed' || (st !== 'connected' && now - pr.t0 > 9000) || (pr.tries || 0) >= 3 && st !== 'connected');
+    if (bad && !voiceBad.has(p.id)) { voiceBad.add(p.id); if (voiceBad.size === 1) toast("Voice can't get through to " + p.name + '. Still trying… (see the Ambience drawer)'); }
+    else if (!bad && st === 'connected') voiceBad.delete(p.id);
+    const el = document.querySelector('.vst[data-id="' + p.id + '"]');
+    if (el) { el.textContent = !pr ? '' : st === 'connected' ? '' : bad ? " ⚠ voice can't connect" : ' connecting…'; el.className = 'vst' + (bad ? ' bad' : ''); }
+  }
+  // the browser can pause all sound until you click the page (common on phones and after the screen locks)
+  const off = ac && ac.state !== 'running';
+  if (!off) soundOffSince = 0; else if (!soundOffSince) soundOffSince = now;
+  $('soundBar').hidden = !(off && now - soundOffSince > 1500);
+}, 1000);
+function wakeSound() { ac?.resume?.(); for (const pr of peers.values()) pr.el?.play().catch(() => {}); }
+$('soundBar').onclick = wakeSound;
+addEventListener('pointerdown', () => { if (ac && ac.state !== 'running') wakeSound(); }, true);
 
 /* ---- input ---- */
 const KEYS = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1], a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] };
@@ -1486,6 +1517,7 @@ function renderVolumes() { // one slider per other person; only rebuilt when the
     const row = document.createElement('label'); row.className = 'sl';
     row.innerHTML = '<span class="who"><span class="dot"></span><span></span></span><input type="range" min="0" max="200" step="5"><output></output>';
     row.querySelector('.dot').style.background = p.color; row.querySelector('.who span:last-child').textContent = p.name + (p.role === 'dm' ? ' (DM)' : '');
+    const st = document.createElement('small'); st.className = 'vst'; st.dataset.id = p.id; row.querySelector('.who').append(st);
     bindSlider(row.querySelector('input'), volOf(p), v => { personVol.set(p.id, v); store.set('vol:' + p.name, v * 100); syncVoice(); });
     box.append(row);
   }
