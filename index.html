@@ -183,6 +183,9 @@ header>*{flex:none}header button{white-space:nowrap}header .grow{flex:1 0 4px}#r
 #ibEmpty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font:16px Georgia,serif;color:#7a5c33}
 @media (max-width: 820px), (max-height: 520px) { #ibWin{width:100%;height:100%;border-radius:0} #ibMain{flex-direction:column} #ibSide{width:auto;max-height:40%;border-right:0;border-bottom:1px solid var(--line)} #chatWin{right:0;bottom:0;width:100%;height:60%;border-radius:12px 12px 0 0} }
 body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
+.linkbar{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;background:rgba(30,18,9,.96);border:1px solid #d9822b;color:var(--ink);font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:calc(100% - 24px)}
+.linkbar button{padding:4px 10px;font-size:13px}.spin{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #d9822b;border-top-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
 </style></head>
 <body>
@@ -208,6 +211,8 @@ body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
     <div id="bookHud" hidden><span id="bookHudDot" class="bsw"></span><b id="bookHudTitle"></b><button id="hudRead">Read</button><button id="hudDrop">Put down</button><button id="hudShelf">Back on shelf</button></div>
     <div id="toast" hidden></div>
     <div id="notes"></div>
+    <div id="relink" class="linkbar" hidden><span class="spin"></span><span id="relinkMsg">Connection lost. Getting you back in…</span><button id="relinkStop">Back to lobby</button></div>
+    <div id="linkBar" class="linkbar" hidden><span class="spin"></span><span>Lost the server, reconnecting… The cottage is safe; players will rejoin by themselves.</span></div>
     <div id="brk" hidden><span>☕ Break</span><b id="brkT">10:00</b></div>
     <section id="chatWin" hidden aria-label="Chat">
       <div class="chead"><b>Chat</b><button id="chatClose" title="Close">✕</button></div>
@@ -441,10 +446,10 @@ function openChannel(code, asHost) {
   if (!RELAY) return new BroadcastChannel('tavern-' + code);
   const ch = { onmessage: null, onsys: null, closed: false, q: [] };
   const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?room=' + encodeURIComponent(code) + (asHost ? '&host=1&key=' + hostKey() : ''));
-  ws.onopen = () => { for (const m of ch.q) ws.send(m); ch.q = []; };
+  ws.onopen = () => { for (const m of ch.q) ws.send(m); ch.q = []; ch.onopen?.(); };
   ws.onmessage = e => { let d; try { d = JSON.parse(e.data); } catch { return; } if (d.sys) ch.onsys?.(d); else ch.onmessage?.({ data: d }); };
   ws.onclose = () => { if (!ch.closed) { ch.closed = true; ch.onsys?.({ sys: 'closed' }); } };
-  ch.postMessage = obj => { const t = JSON.stringify(obj); if (ws.readyState === 1) ws.send(t); else if (ws.readyState === 0) ch.q.push(t); };
+  ch.postMessage = obj => { const t = JSON.stringify(obj); if (ws.readyState === 1) ws.send(t); else if (ws.readyState === 0) { ch.q.push(t); if (ch.q.length > 300) ch.q.shift(); } };
   ch.close = () => { ch.closed = true; try { ws.close(); } catch (e) {} };
   return ch;
 }
@@ -462,15 +467,38 @@ class Host {
     this.reg = this.buildRooms();                             // which room each tile is in (for room chat)
     this.saveKey = 'cottage-save:' + code; this.lastSave = ''; this.restored = this.loadSave();
     this.connOf = new Map(); // player id -> relay connection it joined from (so nobody can pretend to be someone else)
-    this.ch = openChannel(code, true);
-    this.ch.onmessage = e => { if (e.data.k === 'c' && !e.data._h) this.receive(e.data.id, e.data.m, e.data._c); };
-    this.ch.onsys = d => {
-      if (d.sys === 'gone') { for (const [id, c] of this.connOf) if (c === d._c) { this.players.delete(id); this.connOf.delete(id); } }
-      else if (d.sys === 'replaced') { this.noSave = true; this.onLocal({ t: 'ended', msg: 'You opened this session again somewhere else, so it closed here.' }); }
-      else if (d.sys === 'host-taken' || d.sys === 'closed') this.onLocal({ t: 'ended', msg: d.sys === 'closed' ? 'Lost connection to the server.' : 'Someone else is already running a session with that code. Pick a different code.' });
-    };
+    this.away = new Map(); // name -> where they were, for people whose connection dropped
+    this.relinking = false; this.relinkN = 0; this.openLink();
     this.last = performance.now();
     this.stopTick = makeTicker(() => this.step(), 33);
+  }
+  openLink() { // connect to the relay; if the connection drops, keep the cottage running and quietly reconnect
+    this.ch = openChannel(this.code, true);
+    this.ch.onmessage = e => { if (e.data.k === 'c' && !e.data._h) this.receive(e.data.id, e.data.m, e.data._c); };
+    this.ch.onopen = () => { this.relinkN = 0; if (this.relinking) { this.relinking = false; this.onLocal({ t: 'link', on: true }); } };
+    this.ch.onsys = d => {
+      if (d.sys === 'gone') { for (const [id, c] of this.connOf) if (c === d._c) this.drop(id, true); }
+      else if (d.sys === 'replaced') { this.noSave = true; this.onLocal({ t: 'ended', msg: 'You opened this session again somewhere else, so it closed here.' }); }
+      else if (d.sys === 'host-taken') this.onLocal({ t: 'ended', msg: 'Someone else is already running a session with that code. Pick a different code.' });
+      else if (d.sys === 'closed') this.relink();
+    };
+  }
+  relink() {
+    if (this.dead) return;
+    if (!this.relinking) { // everyone else was on the old connection: they'll rejoin by themselves
+      this.relinking = true; this.onLocal({ t: 'link', on: false });
+      for (const [id, p] of [...this.players]) if (id !== this.hostId && p.role !== 'dm') this.drop(id, true);
+      this.connOf.clear();
+    }
+    clearTimeout(this.relinkTm);
+    this.relinkTm = setTimeout(() => { if (!this.dead) this.openLink(); }, Math.min(10000, 600 + this.relinkN++ * 1500));
+  }
+  drop(id, vanished) { // vanished = connection lost (not "Leave"): keep their spot and papers for when they come back
+    const p = this.players.get(id); if (!p) return;
+    this.players.delete(id); this.connOf.delete(id);
+    if (!vanished || p.role === 'dm') return;
+    this.away.set(p.name.toLowerCase(), { x: p.x, y: p.y, at: Date.now() });
+    for (const pp of this.papers) if (pp.owner === id) { pp.owner = ''; pp.pend = p.name; pp.awayAt = Date.now(); this.pv++; }
   }
   resetCottage() { // every prop, door and colour back to how the cottage started
     this.open = new Set(); this.locked = new Set([CELL_DOOR]);
@@ -576,12 +604,18 @@ class Host {
     q.x = pos.x; q.y = pos.y; q.dx = q.dy = 0; q.target = null;
   }
   addPlayer(id, role, name, color) {
-    const pos = role === 'dm' ? { x: 9.5 * TILE, y: 10.5 * TILE } : this.bedSpawn(null);
+    let pos = role === 'dm' ? { x: 9.5 * TILE, y: 10.5 * TILE } : null;
+    if (role !== 'dm') { // reconnecting? the old copy of you may still be hanging about: take its place
+      const key = name.toLowerCase(), stale = [...this.players.values()].find(q => q.role !== 'dm' && q.name.toLowerCase() === key && performance.now() - q.seen > 2500);
+      if (stale) { for (const pp of this.papers) if (pp.owner === stale.id) pp.owner = id; this.pv++; pos = { x: stale.x, y: stale.y }; this.players.delete(stale.id); this.connOf.delete(stale.id); }
+      const a = this.away.get(key); if (a && !pos && Date.now() - a.at < 20 * 60000) pos = { x: a.x, y: a.y }; this.away.delete(key);
+      if (!pos) pos = this.bedSpawn(null);
+    }
     const p = { id, name, color, role, x: pos.x, y: pos.y, dx: 0, dy: 0, target: null, seen: performance.now() };
     this.players.set(id, p);
     this.out({ t: 'joined', id, code: this.code, role, map: this.map }, id); this.sentBv = -1; this.sentPv = -1; this.sentIbv = -1;
     let back = 0;
-    for (const pp of this.papers) if (!pp.owner && ((role === 'dm' && pp.toDm) || (role !== 'dm' && pp.pend && pp.pend.toLowerCase() === name.toLowerCase()))) { pp.owner = id; pp.pend = ''; pp.toDm = false; back++; this.pv++; }
+    for (const pp of this.papers) if (!pp.owner && ((role === 'dm' && pp.toDm) || (role !== 'dm' && pp.pend && pp.pend.toLowerCase() === name.toLowerCase()))) { pp.owner = id; pp.pend = ''; pp.toDm = false; pp.awayAt = 0; back++; this.pv++; }
     if (role === 'dm' && this.restored) this.out({ t: 'toast', msg: 'Welcome back! The cottage is just as you left it.' }, id);
     else if (back) this.out({ t: 'toast', msg: 'Your spell papers from last time are back with you.' }, id); // newcomer gets the books and papers straight away
     return p;
@@ -601,7 +635,7 @@ class Host {
       case 'target': p.target = { x: num(m.x), y: num(m.y) }; break;
       case 'rename': p.name = clean(m.name, p.name); break;
       case 'recolor': p.color = colour(m.color); break;
-      case 'leave': this.players.delete(id); break;
+      case 'leave': this.drop(id, false); break;
       case 'chat': { // everyone, just the room, or private between the DM and one player
         const now = Date.now(); p.chatT = (p.chatT || []).filter(t => now - t < 4000); if (p.chatT.length >= 6) break; p.chatT.push(now);
         const text = String(m.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 500); if (!text) break;
@@ -865,9 +899,10 @@ class Host {
   }
   step() {
     const now = performance.now(); let rem = Math.min(1, (now - this.last) / 1000); this.last = now;
-    for (const [id, p] of this.players) if (p.role !== 'dm' && now - p.seen > 15000) this.players.delete(id); // vanished tab
+    for (const [id, p] of [...this.players]) if (p.role !== 'dm' && now - p.seen > 15000) this.drop(id, true); // vanished tab
     while (rem > 1e-4) { const h = Math.min(rem, 1 / 30); rem -= h; for (const p of this.players.values()) this.move(p, h, now); }
     this.updateSeats();
+    for (const pp of this.papers) if (pp.awayAt && Date.now() - pp.awayAt > 20 * 60000) { pp.awayAt = 0; pp.pend = ''; pp.owner = '?'; } // they never came back
     for (const pp of this.papers) if (pp.owner && !this.players.has(pp.owner)) { const d = [...this.players.values()].find(q => q.role === 'dm'); if (d) { pp.owner = d.id; this.pv++; } } // a leaver's papers go to the DM
     const sendPapers = this.pv !== this.sentPv || this.tick % 60 === 0; this.sentPv = this.pv;
     for (const bk of this.books) if (bk.at === 1) { const h = this.players.get(bk.by); if (h) { bk.x = h.x; bk.y = h.y; } else { bk.at = 2; bk.by = ''; this.bv++; } }
@@ -882,6 +917,7 @@ class Host {
       players: [...this.players.values()].map(({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep, drink }) => ({ id, name, color, role, x, y, ghost, talk, mic, muted, deaf, direct, zoomLock, sleep, drink })) });
   }
   close() {
+    this.dead = true; clearTimeout(this.relinkTm);
     this.saveNow();
     this.stopTick();
     this.ch.postMessage({ k: 's', m: { t: 'ended', msg: 'The DM left; session closed.' } });
@@ -963,7 +999,10 @@ function onServer(m) {
     $('rename').value = $('name').value; $('recolor').value = $('color').value;
     resize(); initAudio(); buildRegions(); buildTileRooms(); lightKey = ''; syncMicBtn(); cam = FULL(); lastRoom = -1; myZoom = false;
     stopPing = makeTicker(() => send({ t: 'ping' }), 1000);
-    seenIds = null; chatLog = []; unread = 0; renderChat(); ibNodes = []; ibSel = 0; $('ibWin').hidden = true; brkLeft = 0; syncBreak();
+    keepAwake();
+    const back = !!rejoin;
+    if (back) { const hadMic = rejoin.mic; stopRejoin(); toast('Reconnected!'); if (hadMic) connectMic(); }
+    seenIds = null; if (!back) chatLog = []; unread = 0; renderChat(); ibNodes = []; ibSel = 0; $('ibWin').hidden = true; brkLeft = 0; syncBreak();
     if (myDrink) send({ t: 'drink', v: myDrink }); syncDrinks();
     if (role === 'dm') $('saveNote').textContent = 'The cottage saves itself in this browser under the code ' + m.code + '. Start a session with the same code and it is all back.';
     try { history.replaceState(null, '', location.pathname + '?code=' + encodeURIComponent(m.code)); } catch (e) {}
@@ -993,6 +1032,7 @@ function onServer(m) {
   } else if (m.t === 'rtc') onRtc(m.from, m.data);
   else if (m.t === 'toast') toast(m.msg);
   else if (m.t === 'chat') gotChat(m);
+  else if (m.t === 'link') { $('linkBar').hidden = m.on; if (m.on) toast('Back online. Players will rejoin by themselves.'); }
   else if (m.t === 'break-over') { brkLeft = 0; syncBreak(); chime([523.25, 659.25, 783.99, 1046.5], 0.22, 0.09); toast("Break's over! Back to the table."); }
   else if (m.t === 'ib-made') { ibSel = m.id; ibFocusTitle = true; }
   else if (m.t === 'error') { clearTimeout(joinTimer); showError(m.msg); }
@@ -1014,21 +1054,47 @@ function start(creating) {
     const code = cleanCode($('code').value);
     if (code.length < 3) return showError('Enter the session code your DM gave you.');
     $('code').value = code; sstore.set('joincode', code);
-    myId = id; ch = openChannel(code, false);
-    ch.onmessage = e => { if (e.data.k === 's' && (!RELAY || e.data._h) && (!e.data.to || e.data.to === myId)) onServer(e.data.m); };
-    ch.onsys = d => {
-      if (d.sys === 'no-room') { clearTimeout(joinTimer); showError('Session not found. Check the code with your DM.'); ch?.close(); ch = null; }
-      else if (d.sys === 'host-gone') leave('The DM left; session closed.', false);
-      else if (d.sys === 'full') { clearTimeout(joinTimer); showError('That session is full.'); ch?.close(); ch = null; }
-      else if (d.sys === 'closed' && ch) { if (map.length) leave('Lost connection to the server.', false); else { clearTimeout(joinTimer); showError('Could not reach the server.'); ch = null; } }
-    };
-    send({ t: 'join', ...identity() });
-    joinTimer = setTimeout(() => { showError(RELAY ? 'Session not found. Check the code with your DM.' : 'Session not found (open it in another tab of this browser).'); ch?.close(); ch = null; }, RELAY ? 6000 : 1500);
+    myId = id; openJoin(code);
   }
 }
+function openJoin(code) { // ask the DM's tab to let us in (also used to rejoin after a dropped connection)
+  ch = openChannel(code, false);
+  ch.onmessage = e => { if (e.data.k === 's' && (!RELAY || e.data._h) && (!e.data.to || e.data.to === myId)) onServer(e.data.m); };
+  const fail = msg => { clearTimeout(joinTimer); const c = ch; ch = null; c?.close(); if (rejoin) lostLink(); else if (map.length) lostLink(); else showError(msg); };
+  ch.onsys = d => {
+    if (d.sys === 'no-room') fail('Session not found. Check the code with your DM.');
+    else if (d.sys === 'full') fail('That session is full.');
+    else if ((d.sys === 'host-gone' || d.sys === 'closed') && ch) fail(d.sys === 'closed' ? 'Could not reach the server.' : 'The DM left; session closed.');
+  };
+  send({ t: 'join', ...identity() });
+  joinTimer = setTimeout(() => fail(RELAY ? 'Session not found. Check the code with your DM.' : 'Session not found (open it in another tab of this browser).'), RELAY ? 6000 : 1500);
+}
+/* ---- dropped connections: keep the screen, keep trying to get back in ---- */
+let rejoin = null, wake = null;
+function lostLink() {
+  if (host) return;
+  if (!rejoin) {
+    if (!map.length) return;
+    rejoin = { code: $('sesCode').textContent, until: Date.now() + 15 * 60000, n: 0, mic: !!micStream };
+    stopVoice(); clearTimeout(joinTimer); stopPing(); stopPing = () => {};
+    if (ch) { const c = ch; ch = null; c.close(); }
+    $('relink').hidden = false; $('relinkMsg').textContent = 'Connection lost. Getting you back in…';
+  }
+  if (Date.now() > rejoin.until) { rejoin = null; $('relink').hidden = true; return leave('Lost connection and could not get back in. Ask your DM if the session is still running.', false); }
+  clearTimeout(rejoin.tm);
+  rejoin.tm = setTimeout(() => { if (!rejoin) return; rejoin.n++; $('relinkMsg').textContent = rejoin.n > 2 ? 'Still reconnecting… (waiting for the DM / server)' : 'Connection lost. Getting you back in…'; myId = rid(); openJoin(rejoin.code); }, Math.min(5000, 500 + rejoin.n * 1000));
+}
+function stopRejoin() { if (rejoin) { clearTimeout(rejoin.tm); rejoin = null; } $('relink').hidden = true; }
+async function keepAwake() { // stop phones and laptops going to sleep mid-session (where the browser allows it)
+  try { if (map.length && !wake && document.visibilityState === 'visible' && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { wake = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  keepAwake();
+  if (document.visibilityState === 'visible' && rejoin) { clearTimeout(rejoin.tm); rejoin.n = 0; lostLink(); } // phone woke up: try straight away
+});
 
 function leave(msg, notify = true) {
-  clearTimeout(joinTimer); stopPing(); stopPing = () => {};
+  clearTimeout(joinTimer); stopPing(); stopPing = () => {}; stopRejoin(); try { wake?.release(); } catch (e) {} wake = null; $('linkBar').hidden = true;
   if (host) { host.close(); host = null; }
   else if (ch) { if (notify) send({ t: 'leave' }); ch.close(); ch = null; }
   stopVoice();
@@ -1040,7 +1106,7 @@ function leave(msg, notify = true) {
   $('game').hidden = true; $('lobby').hidden = false; if (msg) showError(msg);
 }
 addEventListener('pagehide', () => { if (host || ch) leave('', true); });
-makeTicker(() => { if (ch && map.length && performance.now() - lastState > 10000) leave('Lost connection to the DM tab.', false); }, 1000);
+makeTicker(() => { if (ch && map.length && !rejoin && performance.now() - lastState > 10000) lostLink(); }, 1000);
 
 let listSig = '';
 function renderList() {
@@ -2362,6 +2428,7 @@ async function copyInvite() {
   try { await navigator.clipboard.writeText(link); toast(location.protocol === 'file:' ? 'Code copied.' : 'Invite link copied: ' + link); }
   catch (e) { toast('Invite link: ' + link); }
 }
+$('relinkStop').onclick = () => leave('', true);
 $('inviteBtn').onclick = copyInvite; $('sesCode').onclick = copyInvite;
 
 function chime(notes, vol = 0.12, gap = 0.12) { // soft bell notes, made on the spot
