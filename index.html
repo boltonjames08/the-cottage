@@ -99,6 +99,7 @@ body.touch #stick{display:block}body.ui-hidden #stick{opacity:.55}
 #pmenu{max-height:min(560px,80vh);overflow:auto}#pmenu button:disabled{opacity:.55;cursor:default;filter:none}.pnote{margin:2px 4px;font-size:12px;color:var(--muted);max-width:240px}
 #bookCode{flex:1;min-width:0}#bookOnBox .wide,#booksHome{width:100%}
 #bookHud{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:4;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;background:var(--wood);border:1px solid var(--edge);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5);max-width:calc(100% - 24px)}
+#placeHint{font-size:13px;color:#f0c46a;white-space:nowrap}#hudPlace.on{background:linear-gradient(#f3e5c2,#e6d3a6);color:#2a1a0c;text-shadow:none;border-color:#f0c46a}
 #bookHud b{font-family:Georgia,serif;color:#f0dcb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}#bookHud button{padding:5px 9px;font-size:13px}
 #toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:30;padding:8px 14px;border-radius:8px;background:rgba(30,18,9,.95);border:1px solid var(--brass);color:var(--ink);font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 #reader{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;width:min(980px,94%);height:min(720px,90%);display:flex;flex-direction:column;
@@ -208,7 +209,7 @@ body.ui-hidden #chatWin,body.ui-hidden #notes{display:none!important}
   <main><canvas id="canvas"></canvas>
     <div id="stick" aria-label="Move"><div></div></div>
     <div id="pmenu" hidden></div>
-    <div id="bookHud" hidden><span id="bookHudDot" class="bsw"></span><b id="bookHudTitle"></b><button id="hudRead">Read</button><button id="hudDrop">Put down</button><button id="hudShelf">Back on shelf</button></div>
+    <div id="bookHud" hidden><span id="bookHudDot" class="bsw"></span><b id="bookHudTitle"></b><button id="hudRead">Read</button><button id="hudPlace" title="Choose where to put it: a table, or anywhere on the floor nearby">Place…</button><button id="hudDrop" title="Drop it on the floor in front of you">Drop</button><span id="placeHint" hidden>Click a table or the floor near you · Esc to cancel</span><button id="hudShelf">Back on shelf</button></div>
     <div id="toast" hidden></div>
     <div id="notes"></div>
     <div id="relink" class="linkbar" hidden><span class="spin"></span><span id="relinkMsg">Connection lost. Getting you back in…</span><button id="relinkStop">Back to lobby</button></div>
@@ -758,7 +759,7 @@ class Host {
       }
       case 'book-drop': { // put it down, open, on the floor or a table
         const bk = this.heldBy(id), x = num(m.x), y = num(m.y), tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
-        if (bk && Math.hypot(x - p.x, y - p.y) <= BOOK_REACH + 10 && this.map[ty]?.[tx] === '.') { bk.at = 2; bk.x = x; bk.y = y; bk.by = ''; this.bv++; }
+        if (bk && Math.hypot(x - p.x, y - p.y) <= BOOK_REACH + 10 && this.map[ty]?.[tx] === '.' && !this.tables.some(t => (t.k === 'shelf' || t.k === 'bed') && tx >= t.x1 && tx <= t.x2 && ty >= t.y1 && ty <= t.y2)) { bk.at = 2; bk.x = x; bk.y = y; bk.by = ''; this.bv++; }
         break;
       }
       case 'book-pick': {
@@ -1324,6 +1325,13 @@ canvas.addEventListener('pointerdown', e => {
   ac?.resume?.();
   const { x, y, tx, ty } = tileAt(e), me = players.find(p => p.id === myId);
   closeMenu();
+  if (placing) { // putting a held book exactly where you click
+    placeAt = { x, y };
+    const ok = canPlace(x, y);
+    if (ok) { send({ t: 'book-drop', x, y }); setPlacing(false); }
+    else toast(ok === null ? 'Too far away: walk closer, or pick a spot nearer you.' : "A book can't go there. Try a table or the floor.");
+    return;
+  }
   if (role === 'dm' && !tool) { // DM taps a player token -> their command menu
     const hit = players.filter(p => p.id !== myId).map(p => ({ p, d: Math.hypot((shown.get(p.id)?.x ?? p.x) - x, (shown.get(p.id)?.y ?? p.y) - y) })).filter(o => o.d <= RADIUS + 5).sort((a, b) => a.d - b.d)[0];
     if (hit) { openMenu(hit.p.id, e.clientX, e.clientY); return; }
@@ -1356,7 +1364,8 @@ canvas.addEventListener('pointerdown', e => {
   }
   send({ t: 'target', x, y });
 });
-canvas.addEventListener('pointermove', e => { if (drag) { const t = tileAt(e); drag.b = [t.tx, t.ty]; } });
+canvas.addEventListener('pointermove', e => { if (drag) { const t = tileAt(e); drag.b = [t.tx, t.ty]; } if (placing) { const t = tileAt(e); placeAt = { x: t.x, y: t.y }; } });
+canvas.addEventListener('pointerleave', () => { placeAt = null; });
 canvas.addEventListener('pointerup', () => {
   if (press) { clearTimeout(press.timer); send({ t: 'door', x: press.tx, y: press.ty }); press = null; } // short tap on a door = open / close
   if (!drag) return; const { a, b } = drag; drag = null; send({ t: 'table', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); });
@@ -2151,7 +2160,7 @@ function shelfMenu(k, cx, cy) {
 }
 function syncBooksUi() { // the "holding a book" bar, the DM's book controls, and locked books closing for players
   const held = myBook();
-  $('bookHud').hidden = !held;
+  $('bookHud').hidden = !held; if (!held && placing) setPlacing(false);
   if (held) {
     $('bookHudTitle').textContent = bookShort(held.b); $('bookHudDot').style.background = bookCol(held.b);
     $('hudRead').disabled = held.lock && role !== 'dm';
@@ -2202,6 +2211,30 @@ $('rModePage').onclick = () => { if (activeTab) { activeTab.mode = 'page'; rende
 $('rModeText').onclick = () => { if (activeTab) { activeTab.mode = 'text'; renderReader(); } };
 $('rClose').onclick = () => { readerTabs = []; activeTab = null; renderReader(); };
 addEventListener('keydown', e => { if ($('reader').hidden || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return; if (e.key === 'PageDown' || e.key === ']') $('rNext').click(); if (e.key === 'PageUp' || e.key === '[') $('rPrev').click(); if (e.key === 'Escape') $('rClose').click(); });
+/* placing a held book precisely (on a table, or anywhere on the floor within reach) */
+let placing = false, placeAt = null;
+function canPlace(x, y) { // true = fine, null = too far, false = not a place for a book
+  const me = players.find(p => p.id === myId), tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+  if (!me || map[ty]?.[tx] !== '.' || tables.some(t => (t.k === 'shelf' || t.k === 'bed') && tx >= t.x1 && tx <= t.x2 && ty >= t.y1 && ty <= t.y2)) return false;
+  return Math.hypot(me.x - x, me.y - y) <= BOOK_REACH ? true : null;
+}
+function setPlacing(on) {
+  placing = on && !!myBook(); if (!placing) placeAt = null;
+  $('hudPlace').classList.toggle('on', placing); $('hudPlace').textContent = placing ? 'Cancel' : 'Place…';
+  $('placeHint').hidden = !placing; canvas.style.cursor = placing ? 'crosshair' : '';
+}
+function drawPlacing(now) { // the reach circle and a see-through book under the cursor
+  const me = players.find(p => p.id === myId), held = myBook(); if (!placing || !me || !held) return;
+  const s = shown.get(myId) || me;
+  ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(240,196,106,.55)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(s.x, s.y, BOOK_REACH, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  if (!placeAt) return;
+  const ok = canPlace(placeAt.x, placeAt.y);
+  ctx.save(); ctx.globalAlpha = ok ? 0.75 : 0.4; drawOpenBook({ ...held, x: placeAt.x, y: placeAt.y }, now); ctx.restore();
+  ctx.beginPath(); ctx.arc(placeAt.x, placeAt.y, 19, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = ok ? 'rgba(120,230,120,.9)' : 'rgba(240,90,80,.9)'; ctx.stroke(); ctx.lineWidth = 1;
+}
+$('hudPlace').onclick = () => setPlacing(!placing);
+addEventListener('keydown', e => { if (e.key === 'Escape' && placing) setPlacing(false); });
 /* holding bar */
 $('hudRead').onclick = () => { const b = myBook(); if (b) openReader(b); };
 $('hudDrop').onclick = () => { // put it down open, just in front of you
@@ -2718,6 +2751,7 @@ function frame(now) {
     for (const w of WINDOWS) drawWindow(T, w, now);
     drawFixtures(now);
     drawLighting(now);
+    drawPlacing(now);
     if (drag) {
       const x1 = Math.min(drag.a[0], drag.b[0]), x2 = Math.max(drag.a[0], drag.b[0]), y1 = Math.min(drag.a[1], drag.b[1]), y2 = Math.max(drag.a[1], drag.b[1]);
       ctx.fillStyle = 'rgba(130,200,120,.35)'; ctx.fillRect(x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE);
