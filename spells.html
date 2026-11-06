@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#2a1c11"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>The Spell Circle</title>
+<style>
+:root{--ink:#eadbc4;--muted:#b9a789;--faint:#8f7d63;--edge:#5a3a22;--line:#4a3020;--brass:#c8913a;
+--wood:#2a1c11;
+--woodDark:#22170e}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:#140d07;color:var(--ink);height:100vh;height:100dvh}
+h1,h3,h4{font-family:Georgia,'Times New Roman',serif;color:#f0dcb8;letter-spacing:.02em}
+#lobby{max-width:380px;margin:8vh auto;display:flex;flex-direction:column;gap:14px;padding:24px 22px;background:var(--wood);border:1px solid var(--edge);border-radius:12px}
+h1{margin:0;font-weight:600;font-size:30px;text-align:center}.sub{margin:-6px 0 4px;text-align:center;color:var(--muted);font-size:14px}
+label{display:flex;justify-content:space-between;align-items:center;gap:10px;white-space:nowrap}#lobby label input:not([type=color]){flex:1;min-width:0}
+.row{display:flex;gap:8px}.row input{flex:1;min-width:0}
+input,button,select,textarea{font:inherit;padding:8px 10px;border-radius:6px;border:1px solid var(--edge);background:#22150b;color:inherit}
+input:focus{outline:2px solid var(--brass);outline-offset:0}
+input[type=color]{padding:0;width:48px;height:34px}
+button{cursor:pointer;background:#6b4220;border-color:#9a6a3c;color:#f6ead6}
+button:hover{filter:brightness(1.13)}button:disabled{cursor:default;filter:none;opacity:.6}
+.sec{background:#36251a;border-color:var(--edge)}
+.gold{background:#c8913a;border-color:#f0c46a;color:#2a1a0c}
+.danger{background:#8a2c22;border-color:#b8463a}
+#code,#myCode{text-transform:uppercase}#error{color:#ff9a8a;min-height:1em;margin:0}.note{color:var(--faint);font-size:13px;margin:0}.codehint{color:var(--faint);font-size:12px;margin:-6px 0 4px}
+#lobby a{color:var(--muted);font-size:13px;text-align:center}
+#swatches{display:flex;flex-wrap:wrap;gap:8px}.sw{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0}.sw.sel{border-color:#f6ead6;box-shadow:0 0 0 2px var(--brass)}
+#game{display:flex;flex-direction:column;height:100vh;height:100dvh}
+header{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--wood);border-bottom:2px solid #1c1108;z-index:3;overflow-x:auto;scrollbar-width:none}
+header>*{flex:none}header button{white-space:nowrap}header .grow{flex:1 0 4px}
+header .brand{font-family:Georgia,serif;font-size:18px;color:#f0dcb8}
+.ses b{cursor:pointer;border-bottom:1px dashed var(--brass)}#inviteBtn{padding:4px 8px;font-size:12px}
+#roleTag{background:#5a3a22;border:1px solid #7a5232;padding:2px 8px;border-radius:10px;font-size:12px}input#recolor{width:34px;height:34px}
+#micBtn.off{background:#7d241b;border-color:#b8463a}
+#chatBtn{position:relative}#chatBtn i{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#c0392b;color:#fff;font:bold 11px/18px system-ui;font-style:normal}
+#chatBtn.on{background:#c8913a;border-color:#f0c46a;color:#2a1a0c}
+main{flex:1;display:flex;min-height:0;position:relative}
+#stage{flex:1;min-width:0;display:flex;flex-direction:column;background:#1a120b}
+/* the call: one card per person */
+#people{display:flex;gap:10px;padding:12px;overflow-x:auto;flex:none;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.pc{flex:none;width:158px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 8px 8px;border-radius:12px;background:var(--wood);border:1px solid var(--edge);position:relative}
+.pc.me{border-color:var(--brass)}
+.av{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:bold 24px Georgia,serif;color:#fff;border:3px solid rgba(0,0,0,.35);transition:box-shadow .12s}
+.pc.talk .av{box-shadow:0 0 0 4px rgba(80,230,120,.9),0 0 18px rgba(80,230,120,.6)}
+.pc .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc .tags{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;min-height:18px}
+.tag{font-size:11px;padding:1px 6px;border-radius:8px;background:#3e2715;color:var(--muted)}.tag.dm{background:#5a3f0f;color:#ffe08a}.tag.bad{background:#5a1f17;color:#ffb4a6}.tag.pp{background:#4a3b1c;color:#f3e5c2}
+.pc .vol{display:flex;align-items:center;gap:4px;width:100%;font-size:11px;color:var(--faint)}.pc .vol input{flex:1;min-width:0;padding:0;accent-color:var(--brass);background:transparent;border:0}
+.pc .dmb{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:100%}.pc .dmb button{padding:3px 4px;font-size:11px;background:#36251a;border-color:var(--edge)}
+.pc .dmb button.on{background:#ad3226;border-color:#e06050;color:#fff}
+.vst{font-size:11px;color:#ff8a65}
+/* the paper desk */
+#desk{flex:1;min-height:0;display:flex;flex-direction:column}
+.rhead{display:flex;align-items:flex-end;gap:6px;padding:8px 8px 0;border-bottom:1px solid var(--line)}
+#pTabs{flex:1;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}#pTabs::-webkit-scrollbar{display:none}
+.rtab{flex:none;padding:6px 10px;border-radius:8px 8px 0 0;border-bottom:0;font-size:13px;background:#36251a;border-color:var(--edge)}
+.rtab.active{background:#ecdcb4;color:#2a1a0c}
+#pBody{flex:1;min-height:0;display:flex;gap:14px;padding:12px;overflow:auto}
+.pwrap{flex:1 1 380px;min-width:260px;display:flex;align-items:center;justify-content:center}
+svg.paper{width:100%;max-width:520px;max-height:100%;aspect-ratio:400/410;transform:rotate(-1.2deg);filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+svg.paper .dothit{cursor:pointer}svg.paper .hitline{cursor:pointer}svg.paper .dothit:hover{fill:rgba(232,193,90,.25)}
+#pTools{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--woodDark)}#pTools:empty{display:none}
+.decode{flex:0 1 300px;align-self:center;padding:12px 14px;background:rgba(20,12,6,.6);border:1px solid var(--edge);border-radius:10px}
+.decode h4{margin:0 0 8px}.decode small{color:var(--muted);font-family:system-ui;font-weight:400;font-size:11px}
+.drow{display:grid;grid-template-columns:72px 46px 1fr;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:14px}.drow code{grid-column:1/4;color:var(--faint);font-size:11px;margin-top:-4px}
+.drow .cd{color:#e8c15a;font-weight:700;font-size:12px}.drow.unk .wd{color:#ff9a8a}
+.dsum{margin:10px 0 0;font-family:Georgia,serif;font-size:16px;color:#f0dcb8}
+.maker{flex:1 1 420px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:100%}
+.mpart{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(20,12,6,.45)}.mpart.now{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass) inset}
+.mpart h4{margin:0 0 6px}.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{padding:4px 8px;font-size:12px;background:#36251a;border-color:var(--edge)}.chip.common{border-color:#5e8f50}.chip.on{background:#ecdcb4;color:#2a1a0c;border-color:#f0c46a}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--muted);font:17px/1.5 Georgia,serif;padding:20px}
+.empty .big{font-size:52px;opacity:.75}
+/* chat */
+#chatWin{width:330px;flex:none;display:flex;flex-direction:column;background:var(--wood);border-left:2px solid #1c1108}
+#chatWin .chead{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}#chatWin .chead b{flex:1;font-family:Georgia,serif;color:#f0dcb8}#chatWin .chead button{padding:2px 9px}
+#chatLog{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:rgba(0,0,0,.18);font-size:14px}
+.cmsg{line-height:1.35;overflow-wrap:anywhere}.cmsg .who{font-weight:bold}.cmsg .ctag{font-size:11px;padding:1px 6px;border-radius:8px;margin-right:5px;background:#5a3f0f;color:#ffe08a}
+.cmsg.private{background:rgba(255,212,59,.07);border-left:2px solid #ffd43b;padding-left:6px}.cmsg a{color:#8fc7ff}.cmsg .tm{color:var(--faint);font-size:11px;margin-left:4px}
+#chatForm{display:flex;flex-direction:column;gap:6px;padding:8px;border-top:1px solid var(--line)}#chatTo{font-size:13px;padding:5px}
+#chatForm .row{display:flex;gap:6px}#chatIn{flex:1;min-width:0}
+/* pop-ups */
+#toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:30;padding:8px 14px;border-radius:8px;background:rgba(30,18,9,.95);border:1px solid var(--brass);color:var(--ink);font-size:14px;max-width:calc(100% - 24px)}
+#notes{position:absolute;right:14px;bottom:14px;z-index:25;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.note-pop{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(30,18,9,.92);border:1px solid var(--edge);color:var(--ink);font-size:13px;animation:notein .35s ease-out}
+.note-pop .dot{width:12px;height:12px;border-radius:50%;border:1px solid #000}.note-pop.out{opacity:0;transition:opacity .6s}
+@keyframes notein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.linkbar{position:absolute;left:50%;top:60px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;background:rgba(30,18,9,.96);border:1px solid #d9822b;color:var(--ink);font-size:14px;max-width:calc(100% - 24px)}
+.linkbar button{padding:4px 10px;font-size:13px}.spin{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid #d9822b;border-top-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}#soundBar{cursor:pointer}
+/* lobby cards */
+#lobby{max-width:440px;margin:4vh auto;gap:12px}
+.lcard{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.15)}
+.lcard h3{margin:0;font-size:17px}
+#storageWarn{color:#ffb27a;font-size:12px;margin:0}
+/* away people */
+.pc.away{opacity:.5}.pc.away .av{filter:grayscale(.6)}
+/* bottom navigation (phones) */
+#nav{display:none}
+#netBar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#2a1c11;border:1px solid #d9822b;font-size:13px}
+/* spell folder */
+.fold{display:flex;flex-direction:column;gap:10px;width:100%;max-width:880px;margin:0 auto}
+.fold p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
+.fold .fhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fold .fhead b{flex:1;font-family:Georgia,serif;font-size:18px;color:#f0dcb8;min-width:0;overflow-wrap:anywhere}
+.fold .ferr{color:#ff9a8a;font-size:13px;min-height:1em}
+.fold .fwarn{color:#ffb27a;font-size:12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.fspell{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#2a1c11}
+.fspell .top{display:flex;gap:10px;align-items:flex-start}
+.fspell svg{width:84px;height:86px;flex:none}
+.fspell .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.fspell input,.fspell textarea{width:100%;font:inherit;font-size:14px;padding:5px 7px}.fspell input{font-weight:600}
+.fspell textarea{resize:vertical;min-height:34px;font-size:13px;color:var(--muted)}
+.fspell .when{font-size:11px;color:var(--faint)}.fspell .tr{font-family:Georgia,serif;color:#e8c15a;font-size:13px}
+.fspell .acts{display:flex;gap:5px;flex-wrap:wrap}.fspell .acts button{padding:5px 9px;font-size:13px}
+.saverow{display:flex;gap:6px;flex:1;min-width:0}.saverow input{flex:1;min-width:0}
+@media (max-width: 820px) {
+  body{overscroll-behavior:none}
+  input,select,textarea{font-size:16px!important} /* stops phones zooming in when you tap a box */
+  button{min-height:40px;touch-action:manipulation}svg.paper{touch-action:manipulation}
+  #lobby{margin:0 auto;border-radius:0;border-left:0;border-right:0;min-height:100dvh;padding:18px 14px calc(18px + env(safe-area-inset-bottom))}
+  header .brand,#roleTag,#chatBtn,#inviteBtn{display:none}
+  header{padding:6px 10px;gap:6px;padding-top:calc(6px + env(safe-area-inset-top))}header button{padding:6px 10px;font-size:14px}
+  #allPaper{font-size:13px!important}
+  main{flex-direction:column}
+  #nav{display:flex;flex:none;background:#22170e;border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+  #nav button{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;background:transparent;border:0;border-radius:8px;font-size:12px;color:var(--muted);min-height:52px}
+  #nav button span{font-size:20px;line-height:1.1}
+  #nav button.on{background:#36251a;color:#f0dcb8}
+  #nav i{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#c0392b;color:#fff;font:bold 11px/18px system-ui;font-style:normal}
+  /* one screen at a time */
+  body[data-view="call"] #desk,body[data-view="call"] #chatWin{display:none}
+  body[data-view="papers"] #people,body[data-view="folder"] #people,body[data-view="papers"] #chatWin,body[data-view="folder"] #chatWin{display:none}
+  body[data-view="chat"] #stage{display:none}
+  #chatWin{width:100%;flex:1;border-left:0;box-shadow:none}#chatWin .chead{display:none}
+  #people{flex:1;flex-wrap:wrap;align-content:flex-start;overflow-y:auto;overflow-x:hidden;border-bottom:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .pc{width:auto}
+  .rtab.ftab{display:none}
+  #pBody{flex-direction:column;padding:8px;gap:10px}.pwrap{flex:none;min-width:0}svg.paper{max-height:none;width:100%}
+  .decode{align-self:stretch;flex:none}.maker{max-height:none;flex:none}
+  #pTools{gap:6px;padding:8px}#pTools button,#pTools select{flex:1 1 auto}
+  .fgrid{grid-template-columns:1fr}
+  #toast{top:10px}
+  #notes{bottom:12px;right:10px}
+}
+[hidden]{display:none!important}
+</style></head>
+<body data-view="papers">
+<section id="lobby">
+  <h1>The Spell Circle</h1>
+  <p class="sub">Spell papers, a voice call and a chat. Everyone draws; only the DM can read what's written.</p>
+  <div class="lcard">
+    <label>Your name <input id="name" maxlength="20" placeholder="e.g. Thorin" autocomplete="nickname"></label>
+    <label>Your colour <input id="color" type="color" value="#4aa3ff" title="Custom colour"></label>
+    <div id="swatches"></div>
+  </div>
+  <div class="lcard"><h3>Join a game</h3><div class="row"><input id="code" maxlength="12" placeholder="Session code" autocomplete="off" autocapitalize="characters"><button id="join">Join</button></div></div>
+  <div class="lcard"><h3>Run a game (DM)</h3><div class="row"><input id="myCode" maxlength="12" placeholder="Pick a code" autocomplete="off" autocapitalize="characters"><button id="create">Start as DM</button></div>
+    <p class="codehint" style="margin:0">Pick a code once and use it every week. Leave it blank for a random one.</p></div>
+  <p id="error"></p>
+  <div class="lcard"><h3>📁 My spell folder</h3><div id="lobbyFolder"></div></div>
+  <p class="note" id="lobbyNote">You don't need to keep this page open: if your phone locks or you switch apps, you're shown as "away" and you're back the moment you return.</p>
+  <a id="cottageLink" href="/">Go to The Cottage →</a>
+</section>
+<section id="game" hidden>
+  <header>
+    <span class="brand">✦ The Spell Circle</span>
+    <span class="ses">Session <b id="sesCode" title="Tap to copy the invite link"></b></span><button id="inviteBtn" class="sec">Copy invite</button><span id="roleTag"></span>
+    <span class="grow"></span>
+    <button id="allPaper" class="sec" hidden title="Hand every player a blank spell paper">Paper for all</button>
+    <input id="recolor" type="color" title="Change your colour">
+    <button id="chatBtn">Chat<i id="chatBadge" hidden></i></button>
+    <button id="micBtn">Connect mic</button>
+    <button id="leave" class="sec">Leave</button>
+  </header>
+  <main>
+    <div id="stage">
+      <div id="people"></div>
+      <div id="desk">
+        <div class="rhead" id="pHead"><div id="pTabs"></div></div>
+        <div id="pBody"></div>
+        <div id="pTools"></div>
+      </div>
+    </div>
+    <section id="chatWin" aria-label="Chat">
+      <div class="chead"><b>Chat</b><button id="chatClose" class="sec" title="Close">✕</button></div>
+      <div id="chatLog"></div>
+      <form id="chatForm" autocomplete="off"><select id="chatTo" title="Who sees it"></select><div class="row"><input id="chatIn" maxlength="500" placeholder="Type a message… (links work)" enterkeyhint="send"><button id="chatSend">Send</button></div></form>
+    </section>
+    <div id="toast" hidden></div>
+    <div id="notes"></div>
+    <div id="netBar" hidden><span class="spin"></span><span id="netMsg">Reconnecting…</span></div>
+    <button id="soundBar" class="linkbar" hidden>🔇 Your browser has paused the sound. Tap here to hear everyone.</button>
+  </main>
+  <nav id="nav">
+    <button data-v="call"><span>👥</span>Call<i id="navCall" hidden></i></button>
+    <button data-v="papers"><span>📜</span>Papers<i id="navPapers" hidden></i></button>
+    <button data-v="folder"><span>📁</span>Folder</button>
+    <button data-v="chat"><span>💬</span>Chat<i id="navChat" hidden></i></button>
+  </nav>
+</section>
+<script>
+'use strict';
+/* ---- spell circles ----
+   8 dots, the grey start dot at the top, numbered 0-7 clockwise. How far a line jumps says which part of the
+   spell it writes: 1 step = Domain, 2 = Target, 3 = Action, 4 = Modifier.
+   Each part is a path that starts at the grey dot and keeps hopping that distance clockwise, each hop starting
+   where the last one ended. When the path gets back to where its lap began, the next lap starts one dot further
+   round (so Target goes 0-2-4-6-0, then 1-3-5-7-1; Modifier goes 0-4-0, 1-5-1, 2-6-2, 3-7-3).
+   A part's code is binary, read from the right: the rightmost 1 is hop 1, the next place hop 2, and so on.
+   Lines run along the edges of the dots (leaving the left-hand side as you travel), so a line and its return
+   trip sit side by side. A line is stored as [hop, steps]. */
+const SPELL_DOTS = 8, DOT_CLOCKWISE = true;
+const SPELL_PARTS = [
+  { k: 1, name: 'Domain', col: '#d9362b', codes: [['MND', 'Mind', 0, 1], ['BOD', 'Body', 1, 1], ['DMG', 'Damage', 3, 1], ['CTR', 'Control', 5], ['CUR', 'Curse', 7], ['SUM', 'Summon', 9], ['BND', 'Bind', 11], ['CON', 'Contact', 13], ['GAT', 'Gate', 15], ['ENC', 'Enchant', 17], ['WRD', 'Ward', 19], ['DIV', 'Divination', 21], ['RST', 'Restoration', 23], ['TRN', 'Transformation', 29], ['DRM', 'Dreams/Spirit', 31], ['POW', 'Magic/Energy', 33], ['ELD', 'Mythos/Outer Gods', 35]] },
+  { k: 2, name: 'Target', col: '#2f6fd6', codes: [['ONE', 'One target', 0, 1], ['SELF', 'Self', 1, 1], ['MANY', 'Area', 3, 1], ['CRT', 'Creature', 5, 1], ['GOD', 'Deity', 7], ['ANI', 'Animal', 9], ['OBJ', 'Object', 11, 1], ['CRS', 'Corpse', 13, 1], ['GAT', 'Gate', 15], ['SPL', 'Spell', 17], ['SPR', 'Spirit', 19]] },
+  { k: 3, name: 'Action', col: '#d6a10f', codes: [['BLD', 'None / blind', 0, 1], ['MEM', 'Alter memory', 1], ['PAR', 'Paralyse', 3], ['BRN', 'Burn', 5], ['CMD', 'Command', 7], ['DRN', 'Drain', 9], ['FEA', 'Cause fear', 11], ['HRM', 'Harm', 13], ['KIL', 'Kill', 15], ['HEL', 'Heal', 17], ['CHG', 'Change form', 19], ['MOV', 'Move', 21], ['BAN', 'Banish', 23], ['CAL', 'Call', 29], ['SMT', 'Summon', 31], ['LOC', 'Locate', 33], ['CRT', 'Create', 35], ['PRO', 'Protect', 37], ['REV', 'Revive', 39], ['TRF', 'Transfer', 41], ['SUG', 'Suggest', 43, 1], ['THR', 'Enthrall', 45], ['WRP', 'Warp', 47]] },
+  { k: 4, name: 'Modifier', col: '#2f9e44', codes: [['TMP', 'Temporary', 0, 1], ['PRM', 'Permanent', 1, 1], ['ONG', 'Ongoing', 3], ['CMD1', 'Single command', 5, 1], ['PHY', 'Physical', 7, 1], ['MEN', 'Mental', 9, 1], ['FIR', 'Fire', 11], ['WAT', 'Water', 13, 1], ['LIT', 'Lightning', 15], ['SAN', 'Sanity', 17], ['POW', 'Magic power', 19, 1], ['MYT', 'Mythos only', 21]] }];
+function normLine(a, b) { // two tapped dots -> the clockwise line between them: [start dot, steps] (straight across: the tap order)
+  a = ((a | 0) % SPELL_DOTS + SPELL_DOTS) % SPELL_DOTS; b = ((b | 0) % SPELL_DOTS + SPELL_DOTS) % SPELL_DOTS; if (a === b) return null;
+  const k = (b - a + SPELL_DOTS) % SPELL_DOTS; return k <= SPELL_DOTS / 2 ? [a, k] : [b, SPELL_DOTS - k];
+}
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+const lapLen = k => SPELL_DOTS / gcd(k, SPELL_DOTS);                                     // hops before the path closes
+const hopStart = (h, k) => (h * k + Math.floor(h / lapLen(k))) % SPELL_DOTS;             // where hop h of a k-step path begins
+const hopsFrom = (st, k) => [...Array(SPELL_DOTS).keys()].filter(h => hopStart(h, k) === st); // which hop that line is
+const hopLane = () => 0;
+function decodeSpell(lines) { // -> per part: the number and what it means
+  return SPELL_PARTS.map(P => {
+    let n = 0; for (const [st, k] of lines) if (k === P.k) n |= 1 << st;
+    const hit = P.codes.find(c => c[2] === n);
+    return { part: P.name, col: P.col, n, bin: n.toString(2).padStart(8, '0'), code: hit ? hit[0] : '???', word: hit ? hit[1] : 'Unknown' };
+  });
+}
+function encodeSpell(nums) { const lines = []; SPELL_PARTS.forEach((P, i) => { for (let st = 0; st < SPELL_DOTS; st++) if ((nums[i] >> st) & 1) lines.push([st, P.k]); }); return lines; }
+
+const RELAY = !!window.COTTAGE_RELAY;
+const $ = id => document.getElementById(id);
+const rid = (n = 12) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => (b % 36).toString(36)).join('');
+const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+const cleanFolder = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+const store = { get(k, d = '') { try { const v = localStorage.getItem('spells:' + k); return v === null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('spells:' + k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem('spells:' + k); } catch (e) {} } };
+const tabStore = { get(k) { try { return JSON.parse(sessionStorage.getItem('spells:' + k) || 'null'); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem('spells:' + k, JSON.stringify(v)); } catch (e) {} } };
+function makeTicker(fn, ms) {
+  try { const url = URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),' + ms + ')'], { type: 'text/javascript' })); const w = new Worker(url); w.onmessage = fn; return () => { w.terminate(); URL.revokeObjectURL(url); }; }
+  catch (e) { const t = setInterval(fn, ms); return () => clearInterval(t); }
+}
+const MY_PID = store.get('pid') || (() => { const p = rid(); store.set('pid', p); return p; })();   // who you are in sessions (this browser)
+const DM_KEY = store.get('key') || (() => { const k = rid(16); store.set('key', k); return k; })();  // lets you take your DM code back
+
+/* ================= Connection to the website (keeps trying; nothing is lost while it's away) ================= */
+const net = { ws: null, open: false, q: [], tries: 0, tm: 0, storage: '' };
+let session = tabStore.get('session'); // { code, role } while you're in a game (survives the phone reloading the page)
+function netConnect() {
+  if (!RELAY || net.ws) return;
+  clearTimeout(net.tm);
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?app=spells'); net.ws = ws;
+  ws.onopen = () => {
+    net.open = true; net.tries = 0;
+    if (session) netRaw({ t: session.role === 'dm' ? 'create' : 'join', code: session.code, pid: MY_PID, key: DM_KEY, name: myName(), color: myColour() });
+    if (folder) netRaw({ t: 'folder-open', code: folder.code, quiet: true });
+    for (const t of net.q.splice(0)) ws.send(t);
+    syncNetUi();
+  };
+  ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } onMsg(m); };
+  ws.onclose = () => { if (net.ws !== ws) return; net.ws = null; net.open = false; syncNetUi(); net.tm = setTimeout(netConnect, Math.min(5000, 250 + net.tries++ * 600)); };
+}
+const netRaw = m => net.ws.send(JSON.stringify(m));
+function send(m) {
+  if (net.open) return netRaw(m);
+  if (['talk', 'ping', 'rtc', 'mic'].includes(m.t)) return; // only matters live
+  if (net.q.length < 60) net.q.push(JSON.stringify(m));
+  netConnect();
+}
+function wakeUp() { if (!net.ws) { net.tries = 0; netConnect(); } keepAwake(); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wakeUp(); });
+addEventListener('online', wakeUp); addEventListener('pageshow', wakeUp); addEventListener('focus', wakeUp);
+function syncNetUi() { $('netBar').hidden = net.open || !session || $('game').hidden; }
+makeTicker(() => { if (net.open && session) send({ t: 'ping' }); }, 20000);
+
+/* ================= Messages from the server ================= */
+let myId = '', role = 'player', players = [], papers = [], counts = {}, pendingAsk = '';
+function onMsg(m) {
+  switch (m.t) {
+    case 'hello': net.storage = m.storage; renderFolderAll(); break;
+    case 'joined': {
+      const resumed = !$('game').hidden && myId === m.id;
+      myId = m.id; role = m.role; pendingAsk = '';
+      session = { code: m.code, role }; tabStore.set('session', session);
+      if (role === 'dm') store.set('dmcode', m.code); else store.set('joincode', m.code);
+      $('sesCode').textContent = m.code; $('roleTag').textContent = role === 'dm' ? 'Dungeon Master' : 'Player';
+      $('lobby').hidden = true; $('game').hidden = false; $('allPaper').hidden = role !== 'dm'; $('error').textContent = '';
+      $('recolor').value = myColour();
+      chatLog = m.chat || []; renderChat(); renderChatTo();
+      if (!resumed) { paperSel = null; maker = null; knownPapers = null; seenIds = null; setView(matchMedia('(max-width: 820px)').matches ? 'call' : 'papers'); }
+      if (micStream) send({ t: 'mic', on: true });
+      try { history.replaceState(null, '', location.pathname + '?code=' + encodeURIComponent(m.code)); } catch (e) {}
+      keepAwake(); syncNetUi(); break;
+    }
+    case 'state':
+      arrivals(m.players);
+      players = m.players; papers = m.papers || []; counts = m.counts || {};
+      renderPeople(); renderDesk(); syncVoice(); syncNav();
+      if (chatSig !== chatTargetsSig()) renderChatTo();
+      break;
+    case 'error':
+      if (session && !$('game').hidden && m.code === 'no-room') { setTimeout(() => { if (session && net.open) netRaw({ t: 'join', code: session.code, pid: MY_PID, name: myName(), color: myColour() }); }, 4000); $('netMsg').textContent = 'Waiting for the session to start again…'; $('netBar').hidden = false; break; }
+      if (!$('game').hidden) { leaveToLobby(m.msg); break; }
+      session = null; tabStore.set('session', null); $('error').textContent = m.msg; break;
+    case 'ended': leaveToLobby(m.msg); break;
+    case 'toast': toast(m.msg); break;
+    case 'chat': gotChat(m); break;
+    case 'rtc': onRtc(m.from, m.data); break;
+    case 'folder': gotFolder(m); break;
+    case 'folder-error': folderBusy = false; if (m.quiet && /No folder/.test(m.msg)) { folder = null; store.del('folder'); } if (!m.quiet || !folder) folderErr = m.msg; renderFolderAll(); break;
+  }
+}
+const myName = () => $('name').value.trim() || (session?.role === 'dm' ? 'Dungeon Master' : 'Adventurer');
+const myColour = () => $('color').value;
+function start(creating) {
+  $('error').textContent = '';
+  if (!RELAY) return ($('error').textContent = 'Open The Spell Circle from your website (it needs the server).');
+  initAudio();
+  store.set('name', $('name').value); store.set('color', $('color').value);
+  let code;
+  if (creating) {
+    code = cleanCode($('myCode').value);
+    if ($('myCode').value.trim() && code.length < 3) return ($('error').textContent = 'Your code needs 3 to 12 letters or numbers.');
+    if (!code) { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; code = Array.from({ length: 5 }, () => A[Math.floor(Math.random() * A.length)]).join(''); $('myCode').value = code; }
+  } else {
+    code = cleanCode($('code').value);
+    if (code.length < 3) return ($('error').textContent = 'Enter the session code your DM gave you.');
+  }
+  session = { code, role: creating ? 'dm' : 'player' }; tabStore.set('session', session);
+  send({ t: creating ? 'create' : 'join', code, pid: MY_PID, key: DM_KEY, name: myName(), color: myColour() });
+}
+function leaveToLobby(msg, tell) {
+  if (tell) send({ t: 'leave' });
+  session = null; tabStore.set('session', null);
+  stopVoice(); try { wake?.release(); } catch (e) {} wake = null;
+  players = []; papers = []; myId = ''; seenIds = null; $('notes').replaceChildren(); $('people').replaceChildren(); deskSig = '';
+  $('game').hidden = true; $('lobby').hidden = false; $('netBar').hidden = true; $('error').textContent = msg || '';
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  renderFolderAll();
+}
+let wake = null;
+async function keepAwake() { try { if (session && !wake && document.visibilityState === 'visible' && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { wake = null; } }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.tm); toast.tm = setTimeout(() => { t.hidden = true; }, 3500); }
+
+/* ---- lobby ---- */
+const SWATCHES = ['#e03131', '#f76707', '#f59f00', '#82c91e', '#2f9e44', '#12b886', '#15aabf', '#4aa3ff', '#4263eb', '#7950f2', '#d6336c', '#e8e8e8'];
+function syncSwatches() { for (const b of $('swatches').children) b.classList.toggle('sel', b.dataset.c === $('color').value.toLowerCase()); }
+for (const c of SWATCHES) { const b = document.createElement('button'); b.className = 'sw'; b.dataset.c = c; b.title = c; b.style.background = c; b.onclick = () => { $('color').value = c; store.set('color', c); syncSwatches(); }; $('swatches').append(b); }
+$('color').oninput = () => { store.set('color', $('color').value); syncSwatches(); };
+$('name').value = store.get('name'); $('color').value = store.get('color') || SWATCHES[Math.floor(Math.random() * SWATCHES.length)]; syncSwatches();
+{ const q = new URLSearchParams(location.search).get('code');
+  $('myCode').value = store.get('dmcode'); $('code').value = q ? cleanCode(q) : store.get('joincode');
+  for (const id of ['myCode', 'code']) $(id).addEventListener('input', e => { const c = cleanCode(e.target.value); if (c !== e.target.value) e.target.value = c; });
+  $('code').addEventListener('keydown', e => { if (e.key === 'Enter') $('join').click(); });
+  $('myCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('create').click(); }); }
+if (!RELAY) { $('lobbyNote').textContent = 'The Spell Circle runs on your website: open it from there (yoursite/spells).'; $('cottageLink').hidden = true; }
+$('create').onclick = () => start(true);
+$('join').onclick = () => start(false);
+$('leave').onclick = () => leaveToLobby('', true);
+$('recolor').oninput = e => { $('color').value = e.target.value; store.set('color', e.target.value); syncSwatches(); send({ t: 'recolor', color: e.target.value }); };
+async function copyInvite() {
+  const link = location.origin + location.pathname + '?code=' + encodeURIComponent($('sesCode').textContent);
+  try { if (navigator.share && matchMedia('(max-width: 820px)').matches) { await navigator.share({ title: 'The Spell Circle', text: 'Join my game: code ' + $('sesCode').textContent, url: link }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(link); toast('Invite link copied: ' + link); } catch (e) { toast('Invite link: ' + link); }
+}
+$('inviteBtn').onclick = copyInvite; $('sesCode').onclick = copyInvite;
+$('allPaper').onclick = () => { const ps = players.filter(q => q.role !== 'dm'); if (!ps.length) return toast('Nobody else is here yet.'); for (const q of ps) send({ t: 'paper-new', to: q.id }); toast('Everyone has a blank spell paper.'); };
+
+/* ---- phone screens: Call / Papers / Folder / Chat ---- */
+function setView(v) {
+  document.body.dataset.view = v;
+  for (const b of $('nav').children) b.classList.toggle('on', b.dataset.v === v);
+  if (v === 'folder') paperSel = 'folder';
+  else if (v === 'papers' && paperSel === 'folder') paperSel = null;
+  if (v === 'papers') seenPaperCount = myPapers().length;
+  if (v === 'chat') { unread = 0; renderChat(); setTimeout(() => { $('chatLog').scrollTop = 1e9; }, 0); }
+  renderDesk(true); syncNav();
+}
+for (const b of $('nav').children) b.onclick = () => setView(b.dataset.v);
+let seenPaperCount = 0;
+function syncNav() {
+  const v = document.body.dataset.view, np = myPapers().length;
+  if (v === 'papers') seenPaperCount = np;
+  const newP = Math.max(0, np - seenPaperCount);
+  $('navPapers').hidden = !newP; $('navPapers').textContent = newP;
+  $('navChat').hidden = !unread; $('navChat').textContent = unread > 9 ? '9+' : unread;
+  const n = players.filter(p => !p.away).length; $('navCall').hidden = !n; $('navCall').textContent = n; $('navCall').style.background = '#3e6b2f';
+}
+
+/* ---- arrivals and departures ---- */
+let ac = null, master = null;
+function initAudio() { if (ac) { ac.resume?.(); return; } try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.connect(ac.destination); } catch (e) {} }
+function chime(notes, vol = 0.12, gap = 0.12) {
+  if (!ac || !master || ac.state !== 'running') return;
+  const t0 = ac.currentTime + 0.02;
+  notes.forEach((f, i) => {
+    const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), g2 = ac.createGain(), t = t0 + i * gap;
+    o.type = 'sine'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2.01; g2.gain.value = 0.18; o2.connect(g2).connect(g);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    o.connect(g).connect(master); o.start(t); o2.start(t); o.stop(t + 1.5); o2.stop(t + 1.5);
+  });
+}
+let seenIds = null; const seenInfo = new Map();
+function arrivals(list) { // count people who are actually here (not "away")
+  const here = new Map(list.filter(p => !p.away).map(p => [p.id, p]));
+  if (seenIds) {
+    for (const p of here.values()) if (!seenIds.has(p.id) && p.id !== myId) { notePop(p.name + (p.role === 'dm' ? ' (DM)' : '') + ' is here', p.color); chime([587.33, 880], 0.1, 0.13); }
+    for (const id of seenIds) if (!here.has(id) && id !== myId) { const p = list.find(q => q.id === id) || seenInfo.get(id); if (p) { notePop(p.name + (p.away ? ' stepped away' : ' left'), p.color); chime([659.25, 440], 0.08, 0.15); } }
+  }
+  seenIds = new Set(here.keys()); for (const p of list) seenInfo.set(p.id, { name: p.name, color: p.color });
+}
+function notePop(text, color) {
+  const d = document.createElement('div'); d.className = 'note-pop'; d.innerHTML = '<span class="dot"></span><span></span>'; d.firstChild.style.background = color; d.lastChild.textContent = text;
+  $('notes').append(d); while ($('notes').children.length > 4) $('notes').firstChild.remove();
+  setTimeout(() => d.classList.add('out'), 3800); setTimeout(() => d.remove(), 4500);
+}
+
+/* ================= The call: a card for each person ================= */
+const personVol = new Map();
+const volOf = p => { if (!personVol.has(p.id)) { const v = +store.get('vol:' + p.name, '100'); personVol.set(p.id, isFinite(v) ? v / 100 : 1); } return personVol.get(p.id); };
+function lum(c) { const n = parseInt(c.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255; }
+let peopleSig = '';
+function renderPeople() {
+  const box = $('people'), sorted = [...players].sort((a, b) => (b.role === 'dm') - (a.role === 'dm') || (b.id === myId) - (a.id === myId) || a.away - b.away);
+  const sig = role + '|' + sorted.map(p => [p.id, p.name, p.color, p.mic, p.muted, p.deaf, p.away, counts[p.id] || 0].join(',')).join('|');
+  if (sig !== peopleSig) {
+    peopleSig = sig; box.replaceChildren();
+    for (const p of sorted) {
+      const c = document.createElement('div'); c.className = 'pc' + (p.id === myId ? ' me' : '') + (p.away ? ' away' : ''); c.dataset.id = p.id;
+      const av = document.createElement('div'); av.className = 'av'; av.style.background = p.color; av.style.color = lum(p.color) > 0.6 ? '#2a1a0c' : '#fff'; av.textContent = (p.name[0] || '?').toUpperCase(); c.append(av);
+      const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = p.name + (p.id === myId ? ' (you)' : ''); c.append(nm);
+      const tags = document.createElement('div'); tags.className = 'tags';
+      const tag = (t, cls = '', tip = '') => { const s = document.createElement('span'); s.className = 'tag ' + cls; s.textContent = t; s.title = tip; tags.append(s); };
+      if (p.role === 'dm') tag('DM', 'dm');
+      if (p.away) tag('away', '', 'Their phone is locked or they switched apps. They come straight back when they return.');
+      else if (!p.mic) tag('no mic', '', 'Hasn’t connected a microphone (can still listen and chat)');
+      if (p.muted) tag('muted', 'bad', 'Muted by the DM: only the DM can hear them');
+      if (p.deaf) tag('deafened', 'bad', 'Deafened by the DM: they can only hear the DM');
+      if (role === 'dm' && p.id !== myId && counts[p.id]) tag('📜 ' + counts[p.id], 'pp', 'Spell papers they are holding');
+      const vs = document.createElement('span'); vs.className = 'vst'; vs.dataset.id = p.id; tags.append(vs);
+      c.append(tags);
+      if (p.id !== myId) {
+        const v = document.createElement('label'); v.className = 'vol'; v.title = 'How loud they are for you'; v.innerHTML = '🔊<input type="range" min="0" max="200" step="5">';
+        const r = v.querySelector('input'); r.value = Math.round(volOf(p) * 100);
+        r.oninput = () => { personVol.set(p.id, r.value / 100); store.set('vol:' + p.name, r.value); syncVoice(); };
+        c.append(v);
+      }
+      if (role === 'dm' && p.role !== 'dm') {
+        const b = document.createElement('div'); b.className = 'dmb';
+        const mk = (label, fn, on, tip) => { const x = document.createElement('button'); x.textContent = label; x.title = tip; if (on) x.classList.add('on'); x.onclick = fn; b.append(x); };
+        mk(p.muted ? 'Unmute' : 'Mute', () => send({ t: 'mute', id: p.id }), p.muted, 'Muted players can only be heard by you');
+        mk(p.deaf ? 'Undeafen' : 'Deafen', () => send({ t: 'deafen', id: p.id }), p.deaf, 'Deafened players can only hear you');
+        mk('Give paper', () => { send({ t: 'paper-new', to: p.id }); toast(p.name + ' has a blank spell paper.'); }, false, 'Hand them a blank spell paper');
+        mk('Message', () => { openChatTo(p.id); }, false, 'Send them a private message');
+        mk('Remove', () => { if (confirm('Remove ' + p.name + ' from the session?')) send({ t: 'kick', id: p.id }); }, false, 'Remove from the session');
+        c.append(b);
+      }
+      box.append(c);
+    }
+  }
+  for (const p of players) box.querySelector('.pc[data-id="' + p.id + '"]')?.classList.toggle('talk', !!p.talk);
+}
+
+/* ================= Spell papers ================= */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (tag, at = {}, parent) => { const e = document.createElementNS(SVGNS, tag); for (const k in at) e.setAttribute(k, at[k]); if (parent) parent.append(e); return e; };
+function dotPos(i) { const a = (DOT_CLOCKWISE ? 1 : -1) * i * Math.PI * 2 / SPELL_DOTS - Math.PI / 2; return [200 + Math.cos(a) * 140, 205 + Math.sin(a) * 140]; }
+function drawPaperSvg(svg, lines, opts = {}) { // old, yellowed paper with the 8 dots and the drawn lines
+  svg.replaceChildren(); svg.setAttribute('viewBox', '0 0 400 410');
+  const defs = el('defs', {}, svg);
+  defs.innerHTML = `<radialGradient id="pg${opts.uid}" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#f1dfa6"/><stop offset=".6" stop-color="#e2c47f"/><stop offset="1" stop-color="#b98d4c"/></radialGradient>
+    <filter id="pt${opts.uid}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="4" seed="${opts.seed || 3}"/><feColorMatrix values="0 0 0 0 .42  0 0 0 0 .27  0 0 0 0 .1  0 0 0 -1.1 .62"/></filter>
+    <filter id="pe${opts.uid}"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="${(opts.seed || 3) + 4}"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>`;
+  const shape = 'M14 18 L120 10 L230 16 L330 9 L388 20 L392 120 L386 230 L393 330 L382 398 L270 402 L160 396 L60 404 L12 392 L18 290 L9 180 L16 80 Z';
+  el('path', { d: shape, fill: 'rgba(0,0,0,.35)', transform: 'translate(4,6)', filter: `url(#pe${opts.uid})` }, svg);
+  el('path', { d: shape, fill: `url(#pg${opts.uid})`, filter: `url(#pe${opts.uid})` }, svg);
+  el('path', { d: shape, fill: '#000', filter: `url(#pt${opts.uid})`, opacity: .55 }, svg);         // blotches and age spots
+  for (const [x, y, r] of [[80, 330, 34], [320, 90, 22], [300, 350, 16]]) el('circle', { cx: x, cy: y, r, fill: 'none', stroke: 'rgba(120,75,30,.22)', 'stroke-width': 5 }, svg); // old cup rings
+  el('path', { d: shape, fill: 'none', stroke: '#7a4f22', 'stroke-width': 2.2, opacity: .7, filter: `url(#pe${opts.uid})` }, svg); // darkened edge
+  el('circle', { cx: 200, cy: 205, r: 140, fill: 'none', stroke: 'rgba(90,60,30,.25)', 'stroke-width': 1, 'stroke-dasharray': '2 5' }, svg);
+  // lines: each leaves its start dot on the dot's right-hand side and goes clockwise
+  const g = el('g', {}, svg);
+  for (const [h, k] of lines) {
+    const st = hopStart(h, k), off = 12.5; // tangent to the dots: along their edges // out of the right side of the dot, into the left side of the next
+    const [x1, y1] = dotPos(st), [x2, y2] = dotPos(st + k), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ox = dy / L * off, oy = -dx / L * off; // leaves the dot on the other side and arrives on the opposite one
+    const colour = '#2b1a0e';
+    const ln = el('line', { x1: x1 + ox, y1: y1 + oy, x2: x2 + ox, y2: y2 + oy, stroke: colour, 'stroke-width': 2.6, 'stroke-linecap': 'round', opacity: .92 }, g);
+    if (opts.edit) { const hitL = el('line', { x1: x1 + ox, y1: y1 + oy, x2: x2 + ox, y2: y2 + oy, stroke: 'transparent', 'stroke-width': 7, class: 'hitline' }, g); hitL.onclick = e => { e.stopPropagation(); opts.onLine?.(h, k); }; ln.style.pointerEvents = 'none'; }
+  }
+  for (let i = 0; i < SPELL_DOTS; i++) {
+    const [x, y] = dotPos(i);
+    const c = el('circle', { cx: x, cy: y, r: i === 0 ? 14 : 13, fill: i === 0 ? '#6b625a' : '#1e140c', stroke: opts.pick === i ? '#e8c15a' : 'rgba(0,0,0,.3)', 'stroke-width': opts.pick === i ? 4 : 1, class: opts.edit ? 'dot' : '' }, svg);
+    if (opts.edit) { const h = el('circle', { cx: x, cy: y, r: 30, fill: 'transparent', class: 'dothit' }, svg); h.onclick = e => { e.stopPropagation(); opts.onDot?.(i); }; }
+  }
+  if (opts.edit) el('text', { x: 200, y: 400, 'text-anchor': 'middle', 'font-size': 12, fill: 'rgba(60,35,15,.55)', 'font-family': 'Georgia, serif' }, svg).textContent = 'tap two dots to draw a line · tap a line to rub it out';
+}
+
+let paperSel = null, paperPick = null, maker = null, confirmDel = null, deskSig = '', knownPapers = null, saving = null;
+const myPapers = () => papers;
+function renderDesk(force) {
+  const phone = matchMedia('(max-width: 820px)').matches;
+  const sig = JSON.stringify([role, paperSel, paperPick, confirmDel, maker, saving, papers, players.map(p => p.id + p.name), phone]);
+  if (!force && sig === deskSig) return; deskSig = sig;
+  const mine = myPapers(), dm = role === 'dm';
+  if (knownPapers) { const fresh = mine.filter(x => !knownPapers.has(x.id)); if (fresh.length && paperSel !== 'folder') paperSel = fresh[fresh.length - 1].id; } // a paper you were just handed opens by itself
+  knownPapers = new Set(mine.map(x => x.id));
+  if (paperSel !== 'maker' && paperSel !== 'folder' && !mine.some(x => x.id === paperSel)) paperSel = mine[mine.length - 1]?.id ?? (dm ? 'maker' : null);
+  const tabs = $('pTabs'); tabs.replaceChildren();
+  const tab = (label, sel, cls = '') => { const b = document.createElement('button'); b.className = 'rtab ' + cls + (paperSel === sel ? ' active' : ''); b.textContent = label; b.onclick = () => { paperSel = sel; paperPick = null; saving = null; if (phone && sel !== 'folder' && document.body.dataset.view === 'folder') setView('papers'); else renderDesk(true); }; tabs.append(b); };
+  if (paperSel !== 'folder' || !phone) {
+    mine.forEach((x, i) => tab('📜 Paper ' + (i + 1) + (x.from && x.from !== myId && x.fromName ? ' · from ' + x.fromName : ''), x.id));
+    if (dm) tab('✒ Spell maker', 'maker');
+  }
+  tab('📁 My folder', 'folder', 'ftab');
+  $('pHead').hidden = !tabs.querySelector('.rtab:not(.ftab)') && phone;
+  const body = $('pBody'); body.replaceChildren(); const tools = $('pTools'); tools.replaceChildren();
+  const btn = (label, fn, cls) => { const b = document.createElement('button'); b.textContent = label; b.className = cls || 'sec'; b.onclick = fn; tools.append(b); return b; };
+  if (paperSel === 'folder') { const box = document.createElement('div'); box.className = 'fold'; body.append(box); folderBoxes.session = box; renderFolder(box, true); return; }
+  if (paperSel === null) {
+    body.innerHTML = '<div class="empty"><div class="big">📜</div><div>No spell paper yet.<br>When the DM hands you one, it appears here for you to draw on.</div></div>';
+    return;
+  }
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.classList.add('paper'); const wrap = document.createElement('div'); wrap.className = 'pwrap'; wrap.append(svg); body.append(wrap);
+  if (paperSel === 'maker') return renderMaker(svg, body, btn);
+  const pp = mine.find(x => x.id === paperSel);
+  drawPaperSvg(svg, pp.lines, { uid: 'p' + pp.id, seed: pp.id, edit: true, pick: paperPick,
+    onDot: i => {
+      if (paperPick === null) paperPick = i; else if (paperPick === i) paperPick = null;
+      else { const n = normLine(paperPick, i), hops = n ? hopsFrom(n[0], n[1]) : []; if (!hops.length) toast('That line isn’t on a path from the grey dot.'); else send({ t: 'paper-toggle', id: pp.id, h: hops[0], k: n[1] }); paperPick = null; }
+      renderDesk(true);
+    },
+    onLine: (h, k) => send({ t: 'paper-toggle', id: pp.id, h, k }) });
+  if (saving === pp.id) return saveRow(tools, pp.lines, () => { saving = null; renderDesk(true); });
+  if (!dm) { const d = players.find(q => q.role === 'dm'); btn('Give to the DM', () => { if (d) { send({ t: 'paper-give', id: pp.id, to: d.id }); toast('You handed the paper to the DM.'); } else toast('The DM isn’t here right now.'); }, 'gold'); }
+  btn('💾 Save to folder', () => { if (!folder) { toast('Open your spell folder first.'); return openFolderView(); } saving = pp.id; renderDesk(true); });
+  btn('Rub out all', () => send({ t: 'paper-clear', id: pp.id }));
+  if (dm) {
+    const sel = document.createElement('select'); sel.innerHTML = '<option value="">Give to…</option>';
+    for (const q of players) if (q.id !== myId) { const o = document.createElement('option'); o.value = q.id; o.textContent = q.name + (q.away ? ' (away)' : ''); sel.append(o); }
+    sel.onchange = () => { if (sel.value) { send({ t: 'paper-give', id: pp.id, to: sel.value }); toast('Paper given to ' + players.find(q => q.id === sel.value)?.name + '.'); } }; tools.append(sel);
+  }
+  btn(confirmDel === pp.id ? 'Tap again to throw away' : 'Throw away', () => { if (confirmDel === pp.id) { send({ t: 'paper-del', id: pp.id }); confirmDel = null; } else { confirmDel = pp.id; renderDesk(true); setTimeout(() => { if (confirmDel === pp.id) { confirmDel = null; renderDesk(true); } }, 3000); } }, 'danger');
+  if (dm) body.append(translation(pp.lines));
+}
+function translation(lines) { // only ever on the DM's screen
+  const dec = document.createElement('div'); dec.className = 'decode'; dec.innerHTML = '<h4>Translation <small>(only you can see this)</small></h4>';
+  const rows = decodeSpell(lines);
+  for (const r of rows) {
+    const row = document.createElement('div'); row.className = 'drow' + (r.word === 'Unknown' ? ' unk' : '');
+    row.innerHTML = '<b></b><span class="cd"></span><span class="wd"></span><code></code>';
+    row.querySelector('b').textContent = r.part; row.querySelector('.cd').textContent = r.code; row.querySelector('.wd').textContent = r.word; row.querySelector('code').textContent = r.bin;
+    dec.append(row);
+  }
+  const s2 = document.createElement('p'); s2.className = 'dsum'; s2.textContent = rows.map(r => r.word).join(' · '); dec.append(s2);
+  return dec;
+}
+function saveRow(tools, lines, done) { // name it and keep it in your folder
+  const row = document.createElement('div'); row.className = 'saverow';
+  const inp = document.createElement('input'); inp.placeholder = 'Name this spell'; inp.maxLength = 60; inp.enterKeyHint = 'done';
+  const ok = document.createElement('button'); ok.textContent = 'Save'; ok.className = 'gold';
+  const no = document.createElement('button'); no.textContent = 'Cancel'; no.className = 'sec';
+  const go = () => { send({ t: 'folder-save', code: folder.code, title: inp.value.trim() || 'Untitled spell', lines }); done(); };
+  ok.onclick = go; no.onclick = done; inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+  row.append(inp, ok, no); tools.append(row); setTimeout(() => inp.focus(), 0);
+}
+function renderMaker(svg, body, btn) { // write a spell backwards: tap the words in order and the circle draws itself
+  if (!maker) maker = { step: 0, pick: [0, 0, 0, 0] };
+  const lines = encodeSpell(maker.pick);
+  drawPaperSvg(svg, lines, { uid: 'mk', seed: 11 });
+  const box = document.createElement('div'); box.className = 'maker';
+  SPELL_PARTS.forEach((P, i) => {
+    const sec = document.createElement('div'); sec.className = 'mpart' + (maker.step === i ? ' now' : '');
+    const h = document.createElement('h4'); h.textContent = (i + 1) + '. ' + P.name; sec.append(h);
+    const chips = document.createElement('div'); chips.className = 'chips';
+    for (const [code, word, n, common] of P.codes) {
+      const c = document.createElement('button'); c.className = 'chip' + (maker.pick[i] === n ? ' on' : '') + (common ? ' common' : ''); c.textContent = word; c.title = code + ' · ' + n.toString(2).padStart(8, '0');
+      c.onclick = () => { maker.pick[i] = n; maker.step = Math.min(3, i + 1); renderDesk(true); };
+      chips.append(c);
+    }
+    sec.append(chips); box.append(sec);
+  });
+  body.append(box);
+  if (saving === 'maker') return saveRow($('pTools'), lines, () => { saving = null; renderDesk(true); });
+  btn('Make it into a paper', () => { send({ t: 'paper-new', to: myId, lines }); toast('Spell written onto a new paper.'); }, 'gold');
+  const sel = document.createElement('select'); sel.innerHTML = '<option value="">…or write it for…</option>';
+  for (const q of players) if (q.id !== myId) { const o = document.createElement('option'); o.value = q.id; o.textContent = q.name; sel.append(o); }
+  sel.onchange = () => { if (sel.value) { send({ t: 'paper-new', to: sel.value, lines }); toast('Spell paper given to ' + players.find(q => q.id === sel.value)?.name + '.'); sel.value = ''; } };
+  $('pTools').append(sel);
+  btn('💾 Save to folder', () => { if (!folder) { toast('Open your spell folder first.'); return openFolderView(); } saving = 'maker'; renderDesk(true); });
+  btn('Start again', () => { maker = { step: 0, pick: [0, 0, 0, 0] }; renderDesk(true); });
+}
+
+/* ================= Spell folder: saved online, opened with your own code ================= */
+let folder = null, folderErr = '', folderBusy = false, folderFilter = '', folderDel = 0;
+const folderBoxes = { lobby: $('lobbyFolder'), session: null };
+{ const c = store.get('folder'); if (c) { folder = { code: c, spells: null }; } }
+function openFolderView() { if (matchMedia('(max-width: 820px)').matches) setView('folder'); else { paperSel = 'folder'; renderDesk(true); } }
+function gotFolder(m) {
+  folderBusy = false; folderErr = '';
+  const wasOpen = folder?.code === m.code && folder.spells;
+  folder = { code: m.code, spells: m.spells }; store.set('folder', m.code);
+  if (m.made) toast('Your spell folder is made. Remember the code: ' + m.code);
+  else if (m.saved) toast('Saved to your folder.');
+  else if (!wasOpen && !m.quiet) toast('Folder opened.');
+  renderFolderAll();
+}
+function renderFolderAll() { renderFolder(folderBoxes.lobby, false); if (paperSel === 'folder' && !$('game').hidden) renderDesk(true); }
+function renderFolder(box, inSession) {
+  if (!box) return;
+  box.replaceChildren(); box.classList.add('fold');
+  const err = document.createElement('div'); err.className = 'ferr'; err.textContent = folderErr;
+  if (net.storage === 'file') { const w = document.createElement('div'); w.className = 'fwarn'; w.textContent = 'Heads up: this website isn’t connected to its online storage yet, so folders can be lost when the server restarts. (The website owner: see the top of the Spell Circle part of server.js.)'; box.append(w); }
+  if (!folder) {
+    const p = document.createElement('p'); p.textContent = 'Keep your spells in a folder that’s saved online. Open it on any phone or computer with its code. Anyone with the code can open it, so pick something only you know.'; box.append(p);
+    const mkRow = (ph, label, cls, t) => {
+      const r = document.createElement('div'); r.className = 'row';
+      const i = document.createElement('input'); i.placeholder = ph; i.maxLength = 24; i.autocapitalize = 'characters'; i.autocomplete = 'off';
+      i.oninput = () => { const c = cleanFolder(i.value); if (c !== i.value) i.value = c; };
+      const b = document.createElement('button'); b.textContent = label; b.className = cls;
+      const go = () => { const c = cleanFolder(i.value); if (c.replace(/-/g, '').length < 4) { folderErr = 'A folder code needs at least 4 letters or numbers.'; return renderFolderAll(); } if (!RELAY) { folderErr = 'Spell folders need the website.'; return renderFolderAll(); } folderErr = ''; folderBusy = true; b.disabled = true; send({ t, code: c }); };
+      b.onclick = go; i.onkeydown = e => { if (e.key === 'Enter') go(); };
+      r.append(i, b); box.append(r);
+    };
+    mkRow('Your folder code', 'Open folder', '', 'folder-open');
+    const p2 = document.createElement('p'); p2.textContent = 'New here? Choose a code to make your own folder:'; box.append(p2);
+    mkRow('Choose a code, e.g. THORIN-RUNES', 'Make folder', 'sec', 'folder-create');
+    box.append(err); return;
+  }
+  const head = document.createElement('div'); head.className = 'fhead';
+  const t = document.createElement('b'); t.textContent = '📁 ' + folder.code + (folder.spells ? ' · ' + folder.spells.length + ' spell' + (folder.spells.length === 1 ? '' : 's') : ''); head.append(t);
+  const close = document.createElement('button'); close.className = 'sec'; close.textContent = 'Close folder'; close.title = 'Forget this folder on this device (it stays saved online)';
+  close.onclick = () => { folder = null; store.del('folder'); renderFolderAll(); }; head.append(close);
+  box.append(head, err);
+  if (!folder.spells) { const p = document.createElement('p'); p.textContent = 'Opening your folder…'; box.append(p); if (net.open) send({ t: 'folder-open', code: folder.code, quiet: true }); return; }
+  if (!folder.spells.length) { const p = document.createElement('p'); p.textContent = inSession ? 'Empty so far. Use “💾 Save to folder” under any spell paper to keep it here.' : 'Empty so far. In a game, use “💾 Save to folder” under any spell paper to keep it here.'; box.append(p); return; }
+  if (folder.spells.length > 6) {
+    const f = document.createElement('input'); f.placeholder = 'Search your spells…'; f.value = folderFilter; f.type = 'search';
+    f.oninput = () => { folderFilter = f.value; const q = f.value.toLowerCase(); for (const c of box.querySelectorAll('.fspell')) c.hidden = q && !c.dataset.s.includes(q); };
+    box.append(f);
+  }
+  const blank = inSession && myPapers().find(x => !x.lines.length), dm = inSession && role === 'dm';
+  const grid = document.createElement('div'); grid.className = 'fgrid';
+  for (const s of [...folder.spells].reverse()) {
+    const c = document.createElement('div'); c.className = 'fspell'; c.dataset.s = (s.title + ' ' + s.note).toLowerCase();
+    if (folderFilter && !c.dataset.s.includes(folderFilter.toLowerCase())) c.hidden = true;
+    const top = document.createElement('div'); top.className = 'top'; top.append(miniPaper(s.lines));
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const ti = document.createElement('input'); ti.value = s.title; ti.maxLength = 60; ti.title = 'Rename';
+    ti.onchange = () => send({ t: 'folder-edit', code: folder.code, id: s.id, title: ti.value });
+    const no = document.createElement('textarea'); no.value = s.note || ''; no.placeholder = 'Notes (where you found it, what it did…)'; no.maxLength = 1000; no.rows = 2;
+    no.onchange = () => send({ t: 'folder-edit', code: folder.code, id: s.id, note: no.value });
+    const when = document.createElement('span'); when.className = 'when'; when.textContent = 'Saved ' + new Date(s.saved).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    meta.append(ti, when); top.append(meta); c.append(top, no);
+    if (dm) { const tr = document.createElement('div'); tr.className = 'tr'; tr.textContent = decodeSpell(s.lines).map(r => r.word).join(' · '); c.append(tr); }
+    const acts = document.createElement('div'); acts.className = 'acts';
+    if (dm) { const b = document.createElement('button'); b.className = 'gold'; b.textContent = 'Make into a paper'; b.onclick = () => { send({ t: 'paper-new', to: myId, lines: s.lines }); toast('“' + s.title + '” is on a new paper.'); }; acts.append(b); }
+    else if (inSession) { const b = document.createElement('button'); b.className = 'gold'; b.textContent = 'Copy onto my blank paper'; b.disabled = !blank; b.title = blank ? '' : 'You need a blank spell paper from the DM first'; b.onclick = () => { send({ t: 'paper-fill', id: blank.id, lines: s.lines }); toast('Copied onto your blank paper.'); }; acts.append(b); }
+    const del = document.createElement('button'); del.className = 'danger'; del.textContent = folderDel === s.id ? 'Tap again to delete' : 'Delete';
+    del.onclick = () => { if (folderDel === s.id) { folderDel = 0; send({ t: 'folder-del', code: folder.code, id: s.id }); } else { folderDel = s.id; del.textContent = 'Tap again to delete'; setTimeout(() => { if (folderDel === s.id) { folderDel = 0; del.textContent = 'Delete'; } }, 3000); } };
+    acts.append(del); c.append(acts); grid.append(c);
+  }
+  box.append(grid);
+}
+function miniPaper(lines) { // a small, light drawing of the spell for the folder
+  const svg = document.createElementNS(SVGNS, 'svg'); svg.setAttribute('viewBox', '0 0 400 410');
+  el('rect', { x: 8, y: 8, width: 384, height: 394, rx: 18, fill: '#ecdcb4' }, svg);
+  for (const [h, k] of lines) {
+    const st = hopStart(h, k), off = 12.5, [x1, y1] = dotPos(st), [x2, y2] = dotPos(st + k), dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy), ox = dy / L * off, oy = -dx / L * off;
+    el('line', { x1: x1 + ox, y1: y1 + oy, x2: x2 + ox, y2: y2 + oy, stroke: '#2b1a0e', 'stroke-width': 7, 'stroke-linecap': 'round' }, svg);
+  }
+  for (let i = 0; i < SPELL_DOTS; i++) { const [x, y] = dotPos(i); el('circle', { cx: x, cy: y, r: 15, fill: i === 0 ? '#6b625a' : '#1e140c' }, svg); }
+  return svg;
+}
+renderFolder(folderBoxes.lobby, false);
+
+/* ================= Text chat ================= */
+let chatLog = [], unread = 0, chatSig = '';
+const chatTargetsSig = () => role + '|' + players.filter(p => p.id !== myId).map(p => p.id + p.name + p.role).join();
+function renderChatTo() {
+  chatSig = chatTargetsSig(); const sel = $('chatTo'), cur = sel.value, opts = [['all', 'Everyone']];
+  if (role === 'dm') { for (const p of players) if (p.id !== myId) opts.push([p.id, 'Private to ' + p.name]); }
+  else { const d = players.find(p => p.role === 'dm'); if (d) opts.push([d.id, 'Private to the DM (' + d.name + ')']); }
+  sel.replaceChildren(...opts.map(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; }));
+  sel.value = opts.some(o => o[0] === cur) ? cur : 'all';
+}
+function openChatTo(id) {
+  if (matchMedia('(max-width: 820px)').matches) setView('chat'); else { $('chatWin').hidden = false; syncChatBtn(); }
+  renderChatTo(); $('chatTo').value = id; $('chatIn').focus();
+}
+function linkify(el2, text) {
+  const re = /\bhttps?:\/\/[^\s<>"']+/gi; let last = 0, m;
+  while ((m = re.exec(text))) {
+    const url = m[0].replace(/[.,;:!?)\]]+$/, ''); el2.append(text.slice(last, m.index));
+    const a = document.createElement('a'); a.href = url; a.textContent = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; el2.append(a);
+    last = m.index + url.length; re.lastIndex = last;
+  }
+  el2.append(text.slice(last));
+}
+const chatVisible = () => (matchMedia('(max-width: 820px)').matches ? document.body.dataset.view === 'chat' : !$('chatWin').hidden);
+function gotChat(m) {
+  chatLog.push(m); if (chatLog.length > 300) chatLog.shift();
+  if (m.from !== myId) { if (!chatVisible()) { unread++; if (m.scope === 'private') toast('Private message from ' + m.name); } chime(m.scope === 'private' ? [880, 1174.66] : [987.77], m.scope === 'private' ? 0.07 : 0.035, 0.09); }
+  renderChat(); syncNav();
+}
+function renderChat() {
+  const log = $('chatLog'), atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  log.replaceChildren(...chatLog.map(m => {
+    const d = document.createElement('div'); d.className = 'cmsg ' + m.scope;
+    if (m.scope === 'private') { const t = document.createElement('span'); t.className = 'ctag'; t.textContent = m.from === myId ? 'to ' + m.toName : 'private'; d.append(t); }
+    const w = document.createElement('span'); w.className = 'who'; w.style.color = m.color; w.textContent = m.name + ': '; d.append(w);
+    linkify(d, m.text);
+    const tm = document.createElement('span'); tm.className = 'tm'; const dt = new Date(m.ts); tm.textContent = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0'); d.append(tm);
+    return d;
+  }));
+  if (!chatLog.length) { const e = document.createElement('div'); e.className = 'cmsg'; e.style.color = 'var(--faint)'; e.textContent = 'Share links and spellings, or chat if you have no mic.'; log.append(e); }
+  if (atEnd || chatLog[chatLog.length - 1]?.from === myId) log.scrollTop = log.scrollHeight;
+  $('chatBadge').hidden = !unread; $('chatBadge').textContent = unread > 9 ? '9+' : unread;
+}
+function syncChatBtn() { $('chatBtn').classList.toggle('on', !$('chatWin').hidden); if (!$('chatWin').hidden) { unread = 0; renderChat(); syncNav(); } }
+$('chatBtn').onclick = () => { $('chatWin').hidden = !$('chatWin').hidden; syncChatBtn(); if (!$('chatWin').hidden) { renderChatTo(); $('chatLog').scrollTop = 1e9; } };
+$('chatClose').onclick = () => { $('chatWin').hidden = true; syncChatBtn(); };
+$('chatForm').onsubmit = e => { e.preventDefault(); const text = $('chatIn').value.trim(); if (!text) return; send({ t: 'chat', to: $('chatTo').value, text }); $('chatIn').value = ''; };
+syncChatBtn();
+matchMedia('(max-width: 820px)').addEventListener?.('change', () => { $('chatWin').hidden = false; setView(document.body.dataset.view || 'papers'); });
+
+/* ================= Voice (everyone in the call hears everyone) ================= */
+const STUN = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+let rtcCfg = { iceServers: window.COTTAGE_ICE || STUN };
+if (RELAY) fetch('/ice', { cache: 'no-store' }).then(r => r.json()).then(j => {
+  if (!Array.isArray(j.iceServers) || !j.iceServers.length) return;
+  rtcCfg = { iceServers: [...STUN, ...j.iceServers] };
+  for (const pr of peers.values()) if (pr.pc.connectionState !== 'connected') pr.t0 = -1e9;
+}).catch(() => {});
+let micStream = null, micOn = true, micAn = null, talking = false, talkHold = 0, stopTalkTick = () => {};
+const peers = new Map();
+/** How loud listener L hears speaker S. Muted by the DM: only the DM hears you. Deafened: you only hear the DM. */
+function hearing(L, S) {
+  if (!L || !S || L.id === S.id || S.away) return 0;
+  if (S.muted && L.role !== 'dm') return 0;
+  if (L.deaf && S.role !== 'dm') return 0;
+  return 1;
+}
+async function connectMic() {
+  initAudio();
+  try { micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch (e) { $('micBtn').textContent = 'Mic blocked'; $('micBtn').title = 'Microphone permission was refused or no microphone was found (' + e.name + '). Tap to try again.'; return; }
+  if (!session) { micStream.getTracks().forEach(t => t.stop()); micStream = null; return; }
+  micOn = true;
+  if (ac) { micAn = ac.createAnalyser(); micAn.fftSize = 512; ac.createMediaStreamSource(micStream).connect(micAn); }
+  stopTalkTick = makeTicker(updateTalk, 50);
+  for (const pr of peers.values()) pr.sending = undefined;
+  send({ t: 'mic', on: true }); syncMicBtn(); syncVoice();
+  micStream.getAudioTracks()[0].onended = () => { stopVoice(); send({ t: 'mic', on: false }); toast('Your microphone was switched off. Tap "Connect mic" to turn it back on.'); };
+}
+function updateTalk() {
+  if (!micAn) return;
+  const d = new Float32Array(micAn.fftSize); micAn.getFloatTimeDomainData(d);
+  let sum = 0; for (const v of d) sum += v * v;
+  const now = performance.now(); if (micOn && Math.sqrt(sum / d.length) > 0.02) talkHold = now + 350;
+  const t = now < talkHold; if (t !== talking) { talking = t; send({ t: 'talk', on: t }); }
+}
+function syncMicBtn() { const b = $('micBtn'); b.title = ''; b.textContent = !micStream ? 'Connect mic' : micOn ? '🎙 On' : '🔇 Off'; b.classList.toggle('off', !!micStream && !micOn); }
+$('micBtn').onclick = () => { if (!micStream) return connectMic(); micOn = !micOn; micStream.getAudioTracks().forEach(t => t.enabled = micOn); if (!micOn && talking) { talking = false; send({ t: 'talk', on: false }); } syncMicBtn(); };
+function stopVoice() { for (const id of [...peers.keys()]) dropPeer(id); stopTalkTick(); stopTalkTick = () => {}; micStream?.getTracks().forEach(t => t.stop()); micStream = null; micAn = null; talking = false; syncMicBtn(); }
+function makePeer(id) {
+  const pc = new RTCPeerConnection(rtcCfg), pr = { pc, sender: null, gain: null, el: null, pend: [], sending: undefined, vol: 0, t0: performance.now() };
+  peers.set(id, pr);
+  pc.onicecandidate = e => { if (e.candidate) send({ t: 'rtc', to: id, data: { ice: e.candidate.toJSON() } }); };
+  pc.ontrack = e => {
+    const stream = e.streams[0] || new MediaStream([e.track]);
+    pr.el = new Audio(); pr.el.srcObject = stream; pr.el.muted = true; pr.el.play().catch(() => {});
+    if (ac) { pr.gain = ac.createGain(); pr.gain.gain.value = 0; pr.vol = 0; ac.createMediaStreamSource(stream).connect(pr.gain).connect(master); }
+  };
+  return pr;
+}
+function dropPeer(id) { const pr = peers.get(id); if (!pr) return; pr.pc.close(); if (pr.el) pr.el.srcObject = null; pr.gain?.disconnect(); peers.delete(id); }
+async function callPeer(id) {
+  const pr = makePeer(id), tr = pr.pc.addTransceiver('audio', { direction: 'sendrecv' }); pr.sender = tr.sender;
+  try { await pr.pc.setLocalDescription(await pr.pc.createOffer()); send({ t: 'rtc', to: id, data: { sdp: pr.pc.localDescription.toJSON() } }); } catch (e) { console.warn('voice', e); }
+}
+async function onRtc(from, data) {
+  if (!data || typeof data !== 'object') return;
+  let pr = peers.get(from);
+  try {
+    if (data.sdp?.type === 'offer') {
+      if (pr) dropPeer(from);
+      pr = makePeer(from); await pr.pc.setRemoteDescription(data.sdp);
+      const tr = pr.pc.getTransceivers()[0]; tr.direction = 'sendrecv'; pr.sender = tr.sender;
+      await pr.pc.setLocalDescription(await pr.pc.createAnswer()); send({ t: 'rtc', to: from, data: { sdp: pr.pc.localDescription.toJSON() } });
+    } else if (data.sdp?.type === 'answer' && pr) await pr.pc.setRemoteDescription(data.sdp);
+    else if (data.ice && pr) { if (pr.pc.remoteDescription) await pr.pc.addIceCandidate(data.ice).catch(() => {}); else pr.pend.push(data.ice); }
+    if (pr?.pc.remoteDescription) for (const c of pr.pend.splice(0)) await pr.pc.addIceCandidate(c).catch(() => {});
+    syncVoice();
+  } catch (e) { console.warn('voice', e); }
+}
+function syncVoice() {
+  if (!myId || $('game').hidden || !net.open) return;
+  const here = new Set(players.filter(p => !p.away).map(p => p.id)), now = performance.now();
+  for (const id of [...peers.keys()]) if (!here.has(id)) dropPeer(id);
+  for (const id of here) {
+    if (id === myId || myId > id) continue;
+    const pr = peers.get(id), st = pr?.pc.connectionState;
+    if (!pr || st === 'failed' || st === 'closed' || (!pr.pc.remoteDescription && now - pr.t0 > 6000) || (st !== 'connected' && now - pr.t0 > 20000)) { const n = (pr?.tries || 0) + 1; dropPeer(id); callPeer(id); peers.get(id).tries = n; }
+  }
+  const me = players.find(p => p.id === myId); if (!me) return;
+  const track = micStream?.getAudioTracks()[0] || null;
+  for (const [id, pr] of peers) {
+    const them = players.find(p => p.id === id); if (!them) continue;
+    const out = hearing(them, me) > 0 ? track : null;
+    if (pr.sender && pr.sending !== out) { pr.sending = out; pr.sender.replaceTrack(out).catch(() => {}); }
+    const v = hearing(me, them) * volOf(them);
+    if (pr.gain && Math.abs(v - pr.vol) > 0.01) { pr.vol = v; pr.gain.gain.setTargetAtTime(v, ac.currentTime, 0.08); }
+  }
+}
+const voiceBad = new Set(); let soundOffSince = 0;
+makeTicker(() => {
+  if (!myId || $('game').hidden) { $('soundBar').hidden = true; return; }
+  syncVoice();
+  const now = performance.now();
+  for (const p of players) {
+    if (p.id === myId) continue;
+    const pr = peers.get(p.id), st = pr?.pc.connectionState;
+    const bad = !!pr && (st === 'failed' || (st !== 'connected' && now - pr.t0 > 9000) || ((pr.tries || 0) >= 3 && st !== 'connected'));
+    if (bad && !voiceBad.has(p.id)) { voiceBad.add(p.id); if (voiceBad.size === 1) toast("Voice can't get through to " + p.name + '. Still trying…'); }
+    else if (!bad && st === 'connected') voiceBad.delete(p.id);
+    const e2 = document.querySelector('.vst[data-id="' + p.id + '"]');
+    if (e2) e2.textContent = !pr || st === 'connected' || p.away ? '' : bad ? "⚠ voice can't connect" : 'connecting…';
+  }
+  const off = ac && ac.state !== 'running' && document.visibilityState === 'visible';
+  if (!off) soundOffSince = 0; else if (!soundOffSince) soundOffSince = now;
+  $('soundBar').hidden = !(off && now - soundOffSince > 1500);
+}, 1000);
+function wakeSound() { ac?.resume?.(); for (const pr of peers.values()) pr.el?.play().catch(() => {}); }
+$('soundBar').onclick = wakeSound;
+addEventListener('pointerdown', () => { if (ac && ac.state !== 'running') wakeSound(); }, true);
+addEventListener('keydown', e => { if (e.key === 'Escape' && paperPick !== null) { paperPick = null; renderDesk(true); } });
+if ('mediaSession' in navigator) try { navigator.mediaSession.metadata = new MediaMetadata({ title: 'The Spell Circle', artist: 'Voice call' }); } catch (e) {}
+
+/* ---- start: connect, and if this tab was already in a game (phone reloaded the page), go straight back in ---- */
+netConnect();
+if (session && RELAY) { $('lobby').hidden = true; $('game').hidden = false; $('sesCode').textContent = session.code; $('netMsg').textContent = 'Getting you back in…'; $('netBar').hidden = false; }
+</script>
+</body></html>
